@@ -12,9 +12,6 @@
         :root {
             --cor-fundo: #0076c0;
             --cor-letras: #fefefc;
-            --cor-destaque-1: #FFD700; /* Ouro */
-            --cor-destaque-2: #C0C0C0; /* Prata */
-            --cor-destaque-3: #CD7F32; /* Bronze */
         }
 
         body {
@@ -127,7 +124,7 @@
             <!-- Botão de Login/Logout -->
             <button id="authButton" class="bg-[#fefefc] text-[#0076c0] font-bold py-1 px-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Login Admin</button>
             <!-- Logo da KDM -->
-            <img src="KDM - LOGO2.png" alt="Logo KDM" class="w-32">
+            <img src="https://placehold.co/128x128/fefefc/0076c0?text=KDM" alt="Logo KDM" class="w-32">
         </div>
 
         <!-- Seção de Login (Modal) - Inicialmente oculta -->
@@ -167,7 +164,7 @@
                     </div>
                     
                     <!-- Campos que aparecem com o login de admin -->
-                    <div id="adminFields" class="space-y-4">
+                    <div id="adminFields" class="space-y-4 hidden">
                         <div>
                             <label for="cpf" class="block mb-1 text-lg">CPF</label>
                             <input type="text" id="cpf" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
@@ -224,43 +221,53 @@
             </form>
         </div>
     </div>
-
+    
+    <!-- Modal de Confirmação (Limpar Registros) -->
+    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white text-gray-800 p-6 rounded-md shadow-lg w-full max-w-sm">
+            <h2 class="text-xl text-center font-bold mb-4" id="confirmTitle">Confirmar Limpeza</h2>
+            <p class="text-center mb-6" id="confirmMessage">Tem certeza que deseja limpar todos os registros? Esta ação é irreversível.</p>
+            <div class="flex justify-center space-x-4">
+                <button id="confirmYes" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">Sim, Limpar</button>
+                <button id="confirmNo" class="bg-gray-400 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-500">Cancelar</button>
+            </div>
+        </div>
+    </div>
+    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 
         // Variáveis globais fornecidas pelo ambiente
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         let db, auth;
         let isAdmin = false;
-        let authReady = false;
-        const LOCAL_STORAGE_KEY = 'corredoresData';
 
-        // Funções para manipulação do localStorage
-        function salvarDadosLocalmente(dados) {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dados));
-        }
-
-        function carregarDadosLocalmente() {
-            const data = localStorage.getItem(LOCAL_STORAGE_KEY);
-            return data ? JSON.parse(data) : [];
-        }
+        // Adiciona a visibilidade dos campos de admin baseado no estado inicial
+        document.getElementById('adminFields').classList.toggle('hidden', !isAdmin);
+        document.getElementById('btnLimparRegistros').classList.toggle('hidden', !isAdmin);
 
         async function initializeFirebase() {
             try {
-                const firebaseConfig = {
-    apiKey: "AizasyBzQoQk7Mb6nDtWhzp_tx27HnF1qtyu4",
-    authDomain: "registros-5ddb8.firebaseapp.com",
-    projectId: "registros-5ddb8",
-    storageBucket: "registros-5ddb8.appspot.com",
-    messagingSenderId: "838653309395",
-    appId: "1:838653309395:web:1dcb755bddba4376cc7f26",
-    measurementId: "G-7JC72NT9T7"
-}; catch (error) {
+                setLogLevel('debug');
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // Use o token de autenticação fornecido ou faça login anônimo
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                    console.log("Autenticado com token personalizado.");
+                } else {
+                    await signInAnonymously(auth);
+                    console.log("Autenticado anonimamente.");
+                }
+            } catch (error) {
                 console.error("Erro ao inicializar Firebase:", error);
             }
         }
@@ -275,6 +282,9 @@
         }
 
         function parseTempo(tempoStr) {
+            if (!tempoStr || tempoStr.length !== 9 || isNaN(tempoStr)) {
+                return 0;
+            }
             const horas = Number(tempoStr.substring(0, 2));
             const minutos = Number(tempoStr.substring(2, 4));
             const segundos = Number(tempoStr.substring(4, 6));
@@ -315,52 +325,56 @@
                 else if (posicao === 3) destaqueClass = ['bg-yellow-800', 'text-white'];
                 
                 const itemDiv = document.createElement('div');
-                itemDiv.classList.add('posicao-item', ...destaqueClass);
+                itemDiv.classList.add('posicao-item', ...destaqueClass, 'flex', 'items-center', 'justify-between', 'w-full');
+                if (isAdmin) {
+                    itemDiv.classList.add('user-logged-in');
+                }
 
-                const nomeElement = document.createElement('span');
-                nomeElement.classList.add('nome');
-                nomeElement.textContent = corredor.nome;
-
-                const tempoContainer = document.createElement('div');
-                tempoContainer.classList.add('tempo-container');
-                tempoContainer.innerHTML = `<span class="tempo">${tempoFormatado}</span>`;
-
-                const extraInfoDiv = document.createElement('div');
-                extraInfoDiv.classList.add('extra-info', 'mt-2', 'text-sm', 'text-gray-600', 'flex-1', 'flex-col');
-                extraInfoDiv.innerHTML = `
-                    <p>CPF: ${corredor.cpf || 'N/A'}</p>
-                    <p>Cidade: ${corredor.cidade || 'N/A'}</p>
+                itemDiv.innerHTML = `
+                    <span class="posicao">${posicao}º</span>
+                    <div class="flex-1 flex flex-col mx-4">
+                        <span class="nome">${corredor.nome}</span>
+                        <div class="extra-info mt-2 text-sm text-gray-600 flex flex-col">
+                            <p>CPF: ${corredor.cpf || 'N/A'}</p>
+                            <p>Cidade: ${corredor.cidade || 'N/A'}</p>
+                        </div>
+                    </div>
+                    <div class="tempo-container">
+                        <span class="tempo">${tempoFormatado}</span>
+                    </div>
+                    <div class="edit-buttons flex ml-4 space-x-2">
+                        <button class="bg-blue-500 text-white px-2 py-1 rounded-md" data-id="${corredor.id}" data-action="edit">Editar</button>
+                        <button class="bg-red-500 text-white px-2 py-1 rounded-md" data-id="${corredor.id}" data-action="delete">Excluir</button>
+                    </div>
                 `;
-
-                const editButtonsDiv = document.createElement('div');
-                editButtonsDiv.classList.add('edit-buttons', 'flex', 'ml-4', 'space-x-2');
-                editButtonsDiv.innerHTML = `
-                    <button class="bg-blue-500 text-white px-2 py-1 rounded" onclick="abrirModalEdicao('${corredor.id}', '${corredor.nome}', '${corredor.tempoMs}', '${corredor.cpf || ''}', '${corredor.cidade || ''}')">Editar</button>
-                    <button class="bg-red-500 text-white px-2 py-1 rounded" onclick="deletarCorredor('${corredor.id}')">Excluir</button>
-                `;
-                
-                itemDiv.appendChild(document.createElement('span')).classList.add('posicao');
-                itemDiv.querySelector('.posicao').textContent = `${posicao}º`;
-
-                const contentDiv = document.createElement('div');
-                contentDiv.classList.add('flex-1', 'flex', 'flex-col');
-                contentDiv.appendChild(nomeElement);
-                contentDiv.appendChild(extraInfoDiv);
-                itemDiv.appendChild(contentDiv);
-
-                itemDiv.appendChild(tempoContainer);
-                itemDiv.appendChild(editButtonsDiv);
                 
                 listaClassificacao.appendChild(itemDiv);
+            });
+
+            // Adiciona os event listeners aos botões de edição e exclusão
+            document.querySelectorAll('[data-action="edit"]').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.target.dataset.id;
+                    const corredor = corredores.find(c => c.id === id);
+                    if (corredor) {
+                        abrirModalEdicao(corredor);
+                    }
+                });
+            });
+
+            document.querySelectorAll('[data-action="delete"]').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.target.dataset.id;
+                    const corredor = corredores.find(c => c.id === id);
+                    if (corredor) {
+                        deletarCorredor(corredor.id);
+                    }
+                });
             });
         }
 
         function iniciarListenerBancoDeDados() {
-            // Verifica se a autenticação está pronta antes de iniciar o listener
-            if (!authReady) {
-                console.warn("A autenticação do Firebase ainda não está pronta.");
-                return;
-            }
+            // O listener de onSnapshot deve ser iniciado uma única vez, após a inicialização do Firebase.
             const q = query(getCollectionRef());
             onSnapshot(q, (snapshot) => {
                 const corredores = [];
@@ -371,83 +385,70 @@
                 renderizarClassificacao(corredores);
             }, (error) => {
                 console.error("Erro ao obter dados em tempo real:", error);
-                // Se houver um erro no Firebase, tenta carregar do localStorage como fallback
-                console.log("Tentando carregar dados do localStorage...");
-                const corredoresLocal = carregarDadosLocalmente();
-                renderizarClassificacao(corredoresLocal);
             });
         }
         
         async function limparRegistros() {
             if (!isAdmin) {
-                const feedback = document.createElement('p');
-                feedback.textContent = `Você não tem permissão para limpar os registros.`;
-                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-500');
-                document.getElementById('secaoRegistro').appendChild(feedback);
-                setTimeout(() => feedback.remove(), 3000);
                 return;
             }
 
-            const modal = document.createElement('div');
-            modal.classList.add('fixed', 'inset-0', 'bg-black', 'bg-opacity-50', 'flex', 'items-center', 'justify-center', 'z-50');
-            modal.innerHTML = `
-                <div class="bg-white text-gray-800 p-6 rounded-md shadow-lg text-center">
-                    <p class="mb-4">Tem certeza que deseja limpar todos os registros? Esta ação é irreversível.</p>
-                    <div class="flex justify-center space-x-4">
-                        <button id="confirmarLimpeza" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">Sim, Limpar</button>
-                        <button id="cancelarLimpeza" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">Cancelar</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
+            // Exibe o modal de confirmação
+            const modal = document.getElementById('confirmModal');
+            modal.classList.remove('hidden');
 
-            document.getElementById('confirmarLimpeza').addEventListener('click', async () => {
-                modal.remove();
-                if (authReady) {
-                    const corredoresRef = getCollectionRef();
-                    const corredoresSnapshot = await getDocs(corredoresRef);
-                    const deletePromises = [];
-                    corredoresSnapshot.forEach(doc => {
-                        deletePromises.push(deleteDoc(doc.ref));
-                    });
-                    try {
-                        await Promise.all(deletePromises);
-                        console.log("Todos os registros foram limpos com sucesso.");
-                        salvarDadosLocalmente([]); // Limpa o local storage também
-                        const feedback = document.createElement('p');
-                        feedback.textContent = `Todos os registros foram limpos!`;
-                        feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
-                        document.getElementById('secaoRegistro').appendChild(feedback);
-                        setTimeout(() => feedback.remove(), 3000);
-                    } catch (error) {
-                        console.error("Erro ao limpar os registros no Firebase:", error);
-                    }
-                } else {
-                    salvarDadosLocalmente([]);
-                    renderizarClassificacao([]);
+            const confirmPromise = new Promise((resolve) => {
+                document.getElementById('confirmYes').onclick = () => {
+                    modal.classList.add('hidden');
+                    resolve(true);
+                };
+                document.getElementById('confirmNo').onclick = () => {
+                    modal.classList.add('hidden');
+                    resolve(false);
+                };
+            });
+
+            if (await confirmPromise) {
+                const corredoresRef = getCollectionRef();
+                const corredoresSnapshot = await getDocs(corredoresRef);
+                const deletePromises = [];
+                corredoresSnapshot.forEach(doc => {
+                    deletePromises.push(deleteDoc(doc.ref));
+                });
+                try {
+                    await Promise.all(deletePromises);
+                    console.log("Todos os registros foram limpos com sucesso.");
                     const feedback = document.createElement('p');
-                    feedback.textContent = `Registros locais foram limpos!`;
+                    feedback.textContent = `Todos os registros foram limpos!`;
                     feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
                     document.getElementById('secaoRegistro').appendChild(feedback);
                     setTimeout(() => feedback.remove(), 3000);
+                } catch (error) {
+                    console.error("Erro ao limpar os registros no Firebase:", error);
                 }
-            });
-
-            document.getElementById('cancelarLimpeza').addEventListener('click', () => {
-                modal.remove();
-            });
+            }
         }
 
         // Funções de login e logout
         document.getElementById('authButton').addEventListener('click', () => {
-             if (isAdmin) {
+            if (isAdmin) {
                 isAdmin = false;
                 document.body.classList.remove('user-logged-in');
                 document.getElementById('authButton').textContent = 'Login Admin';
                 document.getElementById('btnLimparRegistros').classList.add('hidden');
-             } else {
+                document.getElementById('adminFields').classList.add('hidden');
+                // Re-renderiza a lista para remover os botões de edição
+                const corredores = [];
+                document.querySelectorAll('.posicao-item').forEach(item => {
+                    const nome = item.querySelector('.nome').textContent;
+                    const tempoMs = parseTempo(item.querySelector('.tempo').textContent.replace(/:/g, ''));
+                    corredores.push({ nome, tempoMs });
+                });
+                renderizarClassificacao(corredores.sort((a, b) => a.tempoMs - b.tempoMs));
+
+            } else {
                 document.getElementById('loginModal').classList.remove('hidden');
-             }
+            }
         });
 
         document.getElementById('btnCancelarLogin').addEventListener('click', () => {
@@ -466,49 +467,41 @@
                 document.getElementById('loginModal').classList.add('hidden');
                 document.getElementById('authButton').textContent = 'Logout';
                 document.getElementById('btnLimparRegistros').classList.remove('hidden');
+                document.getElementById('adminFields').classList.remove('hidden');
                 feedback.classList.add('hidden');
+                // Re-renderiza a lista para adicionar os botões de edição
+                iniciarListenerBancoDeDados();
             } else {
                 feedback.classList.remove('hidden');
             }
         });
 
         // Funções de edição e exclusão
-        window.abrirModalEdicao = (id, nome, tempoMs, cpf, cidade) => {
+        function abrirModalEdicao(corredor) {
             if (!isAdmin) return;
-            document.getElementById('editId').value = id;
-            document.getElementById('editNome').value = nome;
-            document.getElementById('editTempo').value = tempoMs.toString().padStart(9, '0');
-            document.getElementById('editCpf').value = cpf;
-            document.getElementById('editCidade').value = cidade;
+            document.getElementById('editId').value = corredor.id;
+            document.getElementById('editNome').value = corredor.nome;
+            // Formata o tempo para o formato de 9 dígitos
+            const tempoStr = corredor.tempoMs.toString().padStart(9, '0');
+            document.getElementById('editTempo').value = tempoStr;
+            document.getElementById('editCpf').value = corredor.cpf;
+            document.getElementById('editCidade').value = corredor.cidade;
             document.getElementById('editModal').classList.remove('hidden');
-        };
+        }
 
-        window.deletarCorredor = async (id) => {
+        async function deletarCorredor(id) {
             if (!isAdmin) return;
-            if (authReady) {
-                try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/corredores`, id));
-                    const feedback = document.createElement('p');
-                    feedback.textContent = `Corredor excluído com sucesso!`;
-                    feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
-                    document.getElementById('secaoClassificacao').appendChild(feedback);
-                    setTimeout(() => feedback.remove(), 3000);
-                } catch (error) {
-                    console.error("Erro ao deletar corredor no Firebase:", error);
-                }
-            } else {
-                // Caso offline, remove do localStorage
-                let corredoresLocal = carregarDadosLocalmente();
-                corredoresLocal = corredoresLocal.filter(c => c.id !== id);
-                salvarDadosLocalmente(corredoresLocal);
-                renderizarClassificacao(corredoresLocal.sort((a, b) => a.tempoMs - b.tempoMs));
+            try {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/corredores`, id));
                 const feedback = document.createElement('p');
-                feedback.textContent = `Corredor excluído localmente!`;
+                feedback.textContent = `Corredor excluído com sucesso!`;
                 feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
                 document.getElementById('secaoClassificacao').appendChild(feedback);
                 setTimeout(() => feedback.remove(), 3000);
+            } catch (error) {
+                console.error("Erro ao deletar corredor no Firebase:", error);
             }
-        };
+        }
 
         document.getElementById('editForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -521,38 +514,21 @@
             const cidade = document.getElementById('editCidade').value;
             const tempoMs = parseTempo(tempoStr);
 
-            if (authReady) {
-                try {
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/corredores`, id), {
-                        nome: nome,
-                        tempoMs: tempoMs,
-                        cpf: cpf,
-                        cidade: cidade
-                    });
-                    document.getElementById('editModal').classList.add('hidden');
-                    const feedback = document.createElement('p');
-                    feedback.textContent = `Corredor atualizado com sucesso!`;
-                    feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
-                    document.getElementById('secaoClassificacao').appendChild(feedback);
-                    setTimeout(() => feedback.remove(), 3000);
-                } catch (error) {
-                    console.error("Erro ao atualizar corredor no Firebase:", error);
-                }
-            } else {
-                // Caso offline, atualiza no localStorage
-                let corredoresLocal = carregarDadosLocalmente();
-                const index = corredoresLocal.findIndex(c => c.id === id);
-                if (index !== -1) {
-                    corredoresLocal[index] = { id, nome, tempoMs, cpf, cidade, timestamp: corredoresLocal[index].timestamp };
-                    salvarDadosLocalmente(corredoresLocal);
-                    renderizarClassificacao(corredoresLocal.sort((a, b) => a.tempoMs - b.tempoMs));
-                    document.getElementById('editModal').classList.add('hidden');
-                    const feedback = document.createElement('p');
-                    feedback.textContent = `Corredor atualizado localmente!`;
-                    feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
-                    document.getElementById('secaoClassificacao').appendChild(feedback);
-                    setTimeout(() => feedback.remove(), 3000);
-                }
+            try {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/corredores`, id), {
+                    nome: nome,
+                    tempoMs: tempoMs,
+                    cpf: cpf,
+                    cidade: cidade
+                });
+                document.getElementById('editModal').classList.add('hidden');
+                const feedback = document.createElement('p');
+                feedback.textContent = `Corredor atualizado com sucesso!`;
+                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
+                document.getElementById('secaoClassificacao').appendChild(feedback);
+                setTimeout(() => feedback.remove(), 3000);
+            } catch (error) {
+                console.error("Erro ao atualizar corredor no Firebase:", error);
             }
         });
 
@@ -570,9 +546,10 @@
 
             const nome = nomeInput.value;
             const tempoStr = tempoInput.value;
-            const cpf = cpfInput.value;
-            const cidade = cidadeInput.value;
             const tempoMs = parseTempo(tempoStr);
+            const cpf = isAdmin ? cpfInput.value : '';
+            const cidade = isAdmin ? cidadeInput.value : '';
+
             const novoCorredor = {
                 nome: nome,
                 tempoMs: tempoMs,
@@ -581,35 +558,23 @@
                 timestamp: new Date().toISOString()
             };
 
-            if (authReady) {
-                try {
-                    await addDoc(getCollectionRef(), novoCorredor);
-                    const feedback = document.createElement('p');
-                    feedback.textContent = `Corredor "${nome}" adicionado!`;
-                    feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
-                    document.getElementById('secaoRegistro').appendChild(feedback);
-                    setTimeout(() => feedback.remove(), 3000);
-                } catch (error) {
-                    console.error("Erro ao adicionar documento no Firebase:", error);
-                }
-            } else {
-                // Se o Firebase não estiver pronto, salva no localStorage
-                let corredoresLocal = carregarDadosLocalmente();
-                novoCorredor.id = Date.now().toString(); // ID local simples
-                corredoresLocal.push(novoCorredor);
-                salvarDadosLocalmente(corredoresLocal);
-                renderizarClassificacao(corredoresLocal.sort((a, b) => a.tempoMs - b.tempoMs));
+            try {
+                await addDoc(getCollectionRef(), novoCorredor);
                 const feedback = document.createElement('p');
-                feedback.textContent = `Corredor "${nome}" adicionado localmente!`;
+                feedback.textContent = `Corredor "${nome}" adicionado!`;
                 feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
                 document.getElementById('secaoRegistro').appendChild(feedback);
                 setTimeout(() => feedback.remove(), 3000);
+            } catch (error) {
+                console.error("Erro ao adicionar documento no Firebase:", error);
             }
 
             nomeInput.value = '';
             tempoInput.value = '';
-            cpfInput.value = '';
-            cidadeInput.value = '';
+            if (isAdmin) {
+                cpfInput.value = '';
+                cidadeInput.value = '';
+            }
         });
 
         document.getElementById('btnVerClassificacao').addEventListener('click', () => {
@@ -622,22 +587,16 @@
 
         document.getElementById('btnLimparRegistros').addEventListener('click', limparRegistros);
 
-        // Carrega dados locais no início para exibição imediata
-        const corredoresIniciais = carregarDadosLocalmente();
-        if (corredoresIniciais.length > 0) {
-            renderizarClassificacao(corredoresIniciais.sort((a, b) => a.tempoMs - b.tempoMs));
-        }
-
         initializeFirebase();
         alternarSecoes(false);
+        iniciarListenerBancoDeDados();
 
-        // Aguarda o estado de autenticação antes de iniciar o listener
+        // O listener de autenticação só precisa ser usado para verificar o estado
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                authReady = true;
-                iniciarListenerBancoDeDados();
+                console.log("Usuário autenticado:", user.uid);
             } else {
-                console.log("Usuário deslogado.");
+                console.log("Nenhum usuário logado.");
             }
         });
     </script>

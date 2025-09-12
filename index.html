@@ -1,604 +1,294 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro e Classificação de Corrida</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Libre+Franklin:wght@400;700&display=swap" rel="stylesheet">
+    <title>Editor Público de Dados</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --cor-fundo: #0076c0;
-            --cor-letras: #fefefc;
-        }
-
         body {
-            font-family: 'Libre Franklin', sans-serif;
-            background-color: var(--cor-fundo);
-            color: var(--cor-letras);
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        /* Estilos para o modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            padding: 1rem;
+            z-index: 1000;
         }
-
-        h1, h2 {
-            font-family: 'Bebas Neue', sans-serif;
-            color: var(--cor-letras);
-        }
-        
-        /* Estilos específicos para os itens da lista de classificação */
-        .posicao-item {
-            display: flex;
-            align-items: center;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-            border-radius: 0.5rem;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .posicao-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-
-        .posicao-item .posicao {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 2rem;
-            font-weight: bold;
-            width: 4rem;
-            text-align: center;
-            color: var(--cor-letras);
-        }
-        
-        .posicao-item.bg-yellow-400 .posicao,
-        .posicao-item.bg-gray-300 .posicao,
-        .posicao-item.bg-yellow-800 .posicao {
-            color: #111;
-        }
-
-        .posicao-item .nome {
-            flex-grow: 1;
-            margin-left: 1.5rem;
-            font-weight: 700;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .posicao-item .tempo {
-            font-family: monospace;
-            font-weight: 700;
-            font-size: 1.5rem;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-        }
-
-        .tempo-container {
-            background-color: rgba(255, 255, 255, 0.2);
-            padding: 0.5rem 1rem;
-            border-radius: 0.25rem;
-            min-width: 12rem;
-            text-align: right;
-        }
-        
-        /* Oculta os botões de edição e info extra por padrão */
-        .edit-buttons, .extra-info {
-            display: none;
-        }
-
-        /* Exibe apenas para o usuário logado como admin */
-        .user-logged-in .edit-buttons,
-        .user-logged-in .extra-info {
-            display: flex;
-        }
-        
-        /* Oculta a visualização de CPF e Cidade no modo público */
-        .posicao-item:not(.user-logged-in) .extra-info {
-            display: none !important;
-        }
-
-        @media (max-width: 640px) {
-            .posicao-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .posicao-item .nome {
-                margin-left: 0;
-            }
-            .tempo-container {
-                margin-top: 0.5rem;
-                align-self: flex-end;
-            }
+        .modal-content {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 90%;
+            width: 400px;
         }
     </style>
 </head>
-<body class="bg-[#0076c0] text-[#fefefc]">
-    
-    <div id="app" class="w-full max-w-2xl bg-black bg-opacity-10 p-6 rounded-xl shadow-lg flex flex-col items-center">
-        <!-- Login/Logout e Status -->
-        <div class="w-full flex justify-between items-center mb-4">
-            <!-- Botão de Login/Logout -->
-            <button id="authButton" class="bg-[#fefefc] text-[#0076c0] font-bold py-1 px-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Login Admin</button>
-            <!-- Logo da KDM -->
-            <img src="https://placehold.co/128x128/fefefc/0076c0?text=KDM" alt="Logo KDM" class="w-32">
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-2xl">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">Editor Público de Valores</h1>
+        <p class="text-center text-gray-500 mb-6">Edite os valores abaixo. As alterações são sincronizadas em tempo real para todos os usuários.</p>
+
+        <div id="auth-status" class="bg-blue-100 text-blue-800 text-sm p-3 rounded-lg mb-4 text-center">
+            Aguardando autenticação...
         </div>
 
-        <!-- Seção de Login (Modal) - Inicialmente oculta -->
-        <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-            <div class="bg-white text-gray-800 p-6 rounded-md shadow-lg w-full max-w-sm">
-                <h2 class="text-2xl text-center mb-4">Acesso Administrativo</h2>
-                <form id="loginForm" class="space-y-4 mb-6">
-                    <div>
-                        <label for="loginUsername" class="block mb-1 text-lg">Usuário</label>
-                        <input type="text" id="loginUsername" required class="w-full p-3 rounded-md bg-gray-200 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
-                    </div>
-                    <div>
-                        <label for="loginPassword" class="block mb-1 text-lg">Senha</label>
-                        <input type="password" id="loginPassword" required class="w-full p-3 rounded-md bg-gray-200 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
-                    </div>
-                    <button type="submit" class="w-full bg-[#0076c0] text-white font-bold py-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Entrar</button>
-                    <button type="button" id="btnCancelarLogin" class="w-full bg-gray-400 text-gray-800 font-bold py-3 rounded-md transition-transform transform hover:scale-105">Cancelar</button>
-                </form>
-                <p id="loginFeedback" class="text-center text-red-500 font-bold hidden">Usuário ou senha inválidos.</p>
+        <div class="space-y-4">
+            <!-- Form to add new values -->
+            <div class="flex flex-col sm:flex-row gap-2">
+                <input type="text" id="newValueInput" placeholder="Digite um novo valor..." class="flex-grow p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                <button id="addValueButton" class="bg-blue-600 text-white p-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">Adicionar Valor</button>
+            </div>
+            
+            <!-- List of editable values -->
+            <div id="valuesContainer" class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <p class="text-center text-gray-400">Nenhum valor encontrado.</p>
             </div>
         </div>
 
-        <!-- Conteúdo principal da aplicação - Sempre visível -->
-        <div id="mainAppContent" class="w-full">
-            <!-- Seção de Registro -->
-            <div id="secaoRegistro" class="w-full">
-                <h1 class="text-4xl text-center mb-6">Registro de Corredores</h1>
-                <form id="formularioRegistro" class="space-y-4">
-                    <div>
-                        <label for="nome" class="block mb-1 text-lg">Nome do Corredor</label>
-                        <input type="text" id="nome" required class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
-                    </div>
-                    <div>
-                        <label for="tempo" class="block mb-1 text-lg">Tempo (hhmmssms)</label>
-                        <input type="text" id="tempo" required pattern="\d{9}" placeholder="Ex: 000530123" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
-                        <p class="text-sm mt-1 text-[#fefefc]">Digite o tempo como 9 dígitos, sem separadores.</p>
-                    </div>
-                    
-                    <!-- Campos que aparecem com o login de admin -->
-                    <div id="adminFields" class="space-y-4 hidden">
-                        <div>
-                            <label for="cpf" class="block mb-1 text-lg">CPF</label>
-                            <input type="text" id="cpf" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
-                        </div>
-                        <div>
-                            <label for="cidade" class="block mb-1 text-lg">Cidade</label>
-                            <input type="text" id="cidade" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
-                        </div>
-                    </div>
+        <div id="error-message" class="hidden mt-4 text-center p-3 rounded-lg bg-red-100 text-red-800"></div>
+    </div>
 
-                    <button type="submit" class="w-full bg-[#fefefc] text-[#0076c0] font-bold py-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Adicionar Corredor</button>
-                </form>
-                <button id="btnVerClassificacao" class="w-full mt-4 bg-transparent border-2 border-[#fefefc] text-[#fefefc] font-bold py-3 rounded-md transition-transform transform hover:scale-105">Ver Classificação</button>
-                <button id="btnLimparRegistros" class="w-full mt-4 bg-transparent border-2 border-red-500 text-red-500 font-bold py-3 rounded-md transition-transform transform hover:scale-105 hidden">Limpar Todos os Registros</button>
-            </div>
-
-            <!-- Seção de Classificação -->
-            <div id="secaoClassificacao" class="w-full hidden">
-                <h1 class="text-4xl text-center mb-6">Classificação da Corrida</h1>
-                <div id="listaClassificacao" class="w-full space-y-3">
-                    <!-- A lista de corredores será renderizada aqui pelo JavaScript -->
-                </div>
-                <button id="btnVoltarRegistro" class="w-full mt-6 bg-transparent border-2 border-[#fefefc] text-[#fefefc] font-bold py-3 rounded-md transition-transform transform hover:scale-105">Voltar para o Registro</button>
+    <!-- Modal para confirmação/prompt -->
+    <div id="customModal" class="modal-overlay hidden">
+        <div class="modal-content flex flex-col gap-4">
+            <p id="modalMessage" class="text-gray-800 text-lg"></p>
+            <input type="text" id="modalInput" class="hidden p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="flex justify-end gap-2">
+                <button id="modalCancelBtn" class="bg-gray-300 text-gray-800 p-2 rounded-lg font-semibold hover:bg-gray-400 transition-colors">Cancelar</button>
+                <button id="modalConfirmBtn" class="bg-blue-600 text-white p-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors">Confirmar</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal de Edição -->
-    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white text-gray-800 p-6 rounded-md shadow-lg w-full max-w-sm">
-            <h2 class="text-2xl mb-4">Editar Corredor</h2>
-            <form id="editForm" class="space-y-4">
-                <input type="hidden" id="editId">
-                <div>
-                    <label for="editNome" class="block mb-1">Nome</label>
-                    <input type="text" id="editNome" required class="w-full p-2 rounded-md bg-gray-200">
-                </div>
-                <div>
-                    <label for="editTempo" class="block mb-1">Tempo (hhmmssms)</label>
-                    <input type="text" id="editTempo" required pattern="\d{9}" class="w-full p-2 rounded-md bg-gray-200">
-                </div>
-                <div>
-                    <label for="editCpf" class="block mb-1">CPF</label>
-                    <input type="text" id="editCpf" class="w-full p-2 rounded-md bg-gray-200">
-                </div>
-                <div>
-                    <label for="editCidade" class="block mb-1">Cidade</label>
-                    <input type="text" id="editCidade" class="w-full p-2 rounded-md bg-gray-200">
-                </div>
-                <div class="flex justify-between mt-4">
-                    <button type="submit" class="bg-[#0076c0] text-white px-4 py-2 rounded-md">Salvar</button>
-                    <button type="button" id="btnCancelarEdicao" class="bg-gray-400 text-gray-800 px-4 py-2 rounded-md">Cancelar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    
-    <!-- Modal de Confirmação (Limpar Registros) -->
-    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white text-gray-800 p-6 rounded-md shadow-lg w-full max-w-sm">
-            <h2 class="text-xl text-center font-bold mb-4" id="confirmTitle">Confirmar Limpeza</h2>
-            <p class="text-center mb-6" id="confirmMessage">Tem certeza que deseja limpar todos os registros? Esta ação é irreversível.</p>
-            <div class="flex justify-center space-x-4">
-                <button id="confirmYes" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">Sim, Limpar</button>
-                <button id="confirmNo" class="bg-gray-400 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-500">Cancelar</button>
-            </div>
-        </div>
-    </div>
-    
     <script type="module">
+        // Importa as funções necessárias do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, arrayUnion, arrayRemove, updateDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Variáveis globais fornecidas pelo ambiente
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        let db, auth;
-        let isAdmin = false;
+        // Elementos do DOM
+        const authStatusElement = document.getElementById('auth-status');
+        const valuesContainer = document.getElementById('valuesContainer');
+        const newValueInput = document.getElementById('newValueInput');
+        const addValueButton = document.getElementById('addValueButton');
+        const errorMessageElement = document.getElementById('error-message');
 
-        // Adiciona a visibilidade dos campos de admin baseado no estado inicial
-        document.getElementById('adminFields').classList.toggle('hidden', !isAdmin);
-        document.getElementById('btnLimparRegistros').classList.toggle('hidden', !isAdmin);
+        const customModal = document.getElementById('customModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalInput = document.getElementById('modalInput');
+        const modalCancelBtn = document.getElementById('modalCancelBtn');
+        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
 
-        async function initializeFirebase() {
+        let db;
+        let auth;
+        let publicValuesRef;
+        let userId = null;
+
+        // Configura o nível de log do Firestore para depuração
+        setLogLevel('debug');
+
+        // Função para exibir mensagens de erro
+        function displayError(message) {
+            errorMessageElement.textContent = `Erro: ${message}`;
+            errorMessageElement.classList.remove('hidden');
+        }
+
+        // Função para mostrar um modal de confirmação ou prompt
+        function showModal(message, isPrompt, callback) {
+            modalMessage.textContent = message;
+            modalInput.classList.toggle('hidden', !isPrompt);
+            modalInput.value = isPrompt ? callback.defaultValue : '';
+            customModal.classList.remove('hidden');
+
+            const handleConfirm = () => {
+                customModal.classList.add('hidden');
+                callback(isPrompt ? modalInput.value : true);
+                modalConfirmBtn.removeEventListener('click', handleConfirm);
+                modalCancelBtn.removeEventListener('click', handleCancel);
+            };
+
+            const handleCancel = () => {
+                customModal.classList.add('hidden');
+                callback(isPrompt ? null : false);
+                modalConfirmBtn.removeEventListener('click', handleConfirm);
+                modalCancelBtn.removeEventListener('click', handleCancel);
+            };
+
+            modalConfirmBtn.addEventListener('click', handleConfirm);
+            modalCancelBtn.addEventListener('click', handleCancel);
+        }
+
+        // Função de inicialização
+        async function initFirebase() {
             try {
-                setLogLevel('debug');
+                // Inicializa o Firebase
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
 
-                // Use o token de autenticação fornecido ou faça login anônimo
+                // Define o caminho da coleção pública para esta aplicação
+                publicValuesRef = doc(db, `artifacts/${appId}/public/data/editable-values`, 'public-data');
+
+                // Listener de autenticação
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        authStatusElement.textContent = `Autenticado com sucesso. ID do Usuário: ${userId}`;
+                        setupRealtimeListener();
+                    } else {
+                        // Caso a autenticação inicial não funcione, tenta uma autenticação anônima
+                        authStatusElement.textContent = 'Aguardando autenticação anônima...';
+                        try {
+                            await signInAnonymously(auth);
+                        } catch (error) {
+                            console.error("Erro na autenticação anônima:", error);
+                            displayError("Falha na autenticação. Tente recarregar a página.");
+                        }
+                    }
+                });
+
+                // Se houver um token de autenticação inicial, tenta usá-lo
                 if (initialAuthToken) {
                     await signInWithCustomToken(auth, initialAuthToken);
-                    console.log("Autenticado com token personalizado.");
                 } else {
+                    // Se não houver token, tenta autenticar anonimamente
                     await signInAnonymously(auth);
-                    console.log("Autenticado anonimamente.");
                 }
+
             } catch (error) {
                 console.error("Erro ao inicializar Firebase:", error);
+                displayError("Falha ao inicializar a aplicação. Verifique a configuração.");
             }
         }
-        
-        const getCollectionRef = () => {
-            return collection(db, `artifacts/${appId}/public/data/corredores`);
-        };
 
-        function alternarSecoes(mostrarClassificacao) {
-            document.getElementById('secaoRegistro').classList.toggle('hidden', mostrarClassificacao);
-            document.getElementById('secaoClassificacao').classList.toggle('hidden', !mostrarClassificacao);
-        }
-
-        function parseTempo(tempoStr) {
-            if (!tempoStr || tempoStr.length !== 9 || isNaN(tempoStr)) {
-                return 0;
-            }
-            const horas = Number(tempoStr.substring(0, 2));
-            const minutos = Number(tempoStr.substring(2, 4));
-            const segundos = Number(tempoStr.substring(4, 6));
-            const milissegundos = Number(tempoStr.substring(6, 9));
-            return horas * 3600000 + minutos * 60000 + segundos * 1000 + milissegundos;
-        }
-
-        function formatarTempo(tempoMs) {
-            const ms = tempoMs % 1000;
-            const segundosTotal = Math.floor(tempoMs / 1000);
-            const segundos = segundosTotal % 60;
-            const minutosTotal = Math.floor(segundosTotal / 60);
-            const minutos = minutosTotal % 60;
-            const horas = Math.floor(minutosTotal / 60);
-
-            const pad = num => num.toString().padStart(2, '0');
-            const padMs = num => num.toString().padStart(3, '0');
-
-            return `${pad(horas)}:${pad(minutos)}:${pad(segundos)}:${padMs(ms)}`;
-        }
-
-        function renderizarClassificacao(corredores) {
-            const listaClassificacao = document.getElementById('listaClassificacao');
-            listaClassificacao.innerHTML = '';
-
-            if (corredores.length === 0) {
-                listaClassificacao.innerHTML = '<p class="text-center italic">Nenhum corredor registrado ainda.</p>';
-                return;
-            }
-
-            corredores.forEach((corredor, index) => {
-                const posicao = index + 1;
-                const tempoFormatado = formatarTempo(corredor.tempoMs);
-                let destaqueClass = []; 
-                
-                if (posicao === 1) destaqueClass = ['bg-yellow-400', 'text-black'];
-                else if (posicao === 2) destaqueClass = ['bg-gray-300', 'text-black'];
-                else if (posicao === 3) destaqueClass = ['bg-yellow-800', 'text-white'];
-                
-                const itemDiv = document.createElement('div');
-                itemDiv.classList.add('posicao-item', ...destaqueClass, 'flex', 'items-center', 'justify-between', 'w-full');
-                if (isAdmin) {
-                    itemDiv.classList.add('user-logged-in');
-                }
-
-                itemDiv.innerHTML = `
-                    <span class="posicao">${posicao}º</span>
-                    <div class="flex-1 flex flex-col mx-4">
-                        <span class="nome">${corredor.nome}</span>
-                        <div class="extra-info mt-2 text-sm text-gray-600 flex flex-col">
-                            <p>CPF: ${corredor.cpf || 'N/A'}</p>
-                            <p>Cidade: ${corredor.cidade || 'N/A'}</p>
-                        </div>
-                    </div>
-                    <div class="tempo-container">
-                        <span class="tempo">${tempoFormatado}</span>
-                    </div>
-                    <div class="edit-buttons flex ml-4 space-x-2">
-                        <button class="bg-blue-500 text-white px-2 py-1 rounded-md" data-id="${corredor.id}" data-action="edit">Editar</button>
-                        <button class="bg-red-500 text-white px-2 py-1 rounded-md" data-id="${corredor.id}" data-action="delete">Excluir</button>
-                    </div>
-                `;
-                
-                listaClassificacao.appendChild(itemDiv);
-            });
-
-            // Adiciona os event listeners aos botões de edição e exclusão
-            document.querySelectorAll('[data-action="edit"]').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const id = e.target.dataset.id;
-                    const corredor = corredores.find(c => c.id === id);
-                    if (corredor) {
-                        abrirModalEdicao(corredor);
-                    }
-                });
-            });
-
-            document.querySelectorAll('[data-action="delete"]').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const id = e.target.dataset.id;
-                    const corredor = corredores.find(c => c.id === id);
-                    if (corredor) {
-                        deletarCorredor(corredor.id);
-                    }
-                });
-            });
-        }
-
-        function iniciarListenerBancoDeDados() {
-            // O listener de onSnapshot deve ser iniciado uma única vez, após a inicialização do Firebase.
-            const q = query(getCollectionRef());
-            onSnapshot(q, (snapshot) => {
-                const corredores = [];
-                snapshot.forEach((doc) => {
-                    corredores.push({ ...doc.data(), id: doc.id });
-                });
-                corredores.sort((a, b) => a.tempoMs - b.tempoMs);
-                renderizarClassificacao(corredores);
+        // Listener de dados em tempo real
+        function setupRealtimeListener() {
+            onSnapshot(publicValuesRef, (doc) => {
+                const data = doc.data();
+                const items = data ? data.items || [] : [];
+                renderValues(items);
             }, (error) => {
-                console.error("Erro ao obter dados em tempo real:", error);
+                console.error("Erro ao receber dados em tempo real:", error);
+                displayError("Erro na conexão com o banco de dados. Verifique as permissões de acesso.");
             });
         }
-        
-        async function limparRegistros() {
-            if (!isAdmin) {
+
+        // Função para renderizar os valores na interface
+        function renderValues(items) {
+            if (items.length === 0) {
+                valuesContainer.innerHTML = '<p class="text-center text-gray-400">Nenhum valor encontrado. Adicione um para começar.</p>';
+            } else {
+                valuesContainer.innerHTML = '';
+                items.forEach((item, index) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.classList.add('flex', 'items-center', 'justify-between', 'bg-white', 'p-3', 'rounded-lg', 'border', 'border-gray-200', 'shadow-sm', 'mb-2');
+                    itemDiv.innerHTML = `
+                        <span class="text-gray-700 flex-grow mr-4">${item.value}</span>
+                        <div class="flex gap-2">
+                            <button class="edit-btn bg-yellow-500 text-white p-2 rounded-md font-semibold hover:bg-yellow-600 transition-colors" data-index="${index}">Editar</button>
+                            <button class="delete-btn bg-red-500 text-white p-2 rounded-md font-semibold hover:bg-red-600 transition-colors" data-index="${index}">Deletar</button>
+                        </div>
+                    `;
+                    valuesContainer.appendChild(itemDiv);
+                });
+
+                // Adiciona event listeners aos botões de edição e exclusão
+                valuesContainer.querySelectorAll('.edit-btn').forEach(button => {
+                    button.addEventListener('click', (e) => handleEdit(e.target.dataset.index, items));
+                });
+                valuesContainer.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', (e) => handleDelete(e.target.dataset.index, items));
+                });
+            }
+        }
+
+        // Função para adicionar um novo valor
+        async function handleAdd() {
+            const newValue = newValueInput.value.trim();
+            if (!newValue) {
+                displayError('Por favor, digite um valor válido.');
                 return;
             }
+            errorMessageElement.classList.add('hidden');
 
-            // Exibe o modal de confirmação
-            const modal = document.getElementById('confirmModal');
-            modal.classList.remove('hidden');
+            try {
+                // Cria um novo item com um ID único e o valor
+                const newItem = { id: Date.now().toString(), value: newValue };
 
-            const confirmPromise = new Promise((resolve) => {
-                document.getElementById('confirmYes').onclick = () => {
-                    modal.classList.add('hidden');
-                    resolve(true);
-                };
-                document.getElementById('confirmNo').onclick = () => {
-                    modal.classList.add('hidden');
-                    resolve(false);
-                };
-            });
+                // Atualiza o documento no Firestore adicionando o novo item ao array
+                await updateDoc(publicValuesRef, {
+                    items: arrayUnion(newItem)
+                }, { merge: true });
 
-            if (await confirmPromise) {
-                const corredoresRef = getCollectionRef();
-                const corredoresSnapshot = await getDocs(corredoresRef);
-                const deletePromises = [];
-                corredoresSnapshot.forEach(doc => {
-                    deletePromises.push(deleteDoc(doc.ref));
-                });
-                try {
-                    await Promise.all(deletePromises);
-                    console.log("Todos os registros foram limpos com sucesso.");
-                    const feedback = document.createElement('p');
-                    feedback.textContent = `Todos os registros foram limpos!`;
-                    feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
-                    document.getElementById('secaoRegistro').appendChild(feedback);
-                    setTimeout(() => feedback.remove(), 3000);
-                } catch (error) {
-                    console.error("Erro ao limpar os registros no Firebase:", error);
+                newValueInput.value = '';
+            } catch (error) {
+                console.error("Erro ao adicionar valor:", error);
+                displayError("Não foi possível adicionar o valor. Verifique a conexão.");
+            }
+        }
+
+        // Função para editar um valor existente
+        function handleEdit(index, items) {
+            const oldValue = items[index].value;
+            showModal("Digite o novo valor:", true, async (newValue) => {
+                if (newValue !== null && newValue.trim() !== oldValue) {
+                    try {
+                        const itemToUpdate = items[index];
+                        
+                        await updateDoc(publicValuesRef, {
+                            items: arrayRemove(itemToUpdate)
+                        });
+                        
+                        await updateDoc(publicValuesRef, {
+                            items: arrayUnion({ id: itemToUpdate.id, value: newValue.trim() })
+                        });
+                    } catch (error) {
+                console.error("Erro ao editar valor:", error);
+                displayError("Não foi possível editar o valor. Tente novamente. Provável erro de permissão.");
+                    }
                 }
-            }
+            });
         }
 
-        // Funções de login e logout
-        document.getElementById('authButton').addEventListener('click', () => {
-            if (isAdmin) {
-                isAdmin = false;
-                document.body.classList.remove('user-logged-in');
-                document.getElementById('authButton').textContent = 'Login Admin';
-                document.getElementById('btnLimparRegistros').classList.add('hidden');
-                document.getElementById('adminFields').classList.add('hidden');
-                // Re-renderiza a lista para remover os botões de edição
-                const corredores = [];
-                document.querySelectorAll('.posicao-item').forEach(item => {
-                    const nome = item.querySelector('.nome').textContent;
-                    const tempoMs = parseTempo(item.querySelector('.tempo').textContent.replace(/:/g, ''));
-                    corredores.push({ nome, tempoMs });
-                });
-                renderizarClassificacao(corredores.sort((a, b) => a.tempoMs - b.tempoMs));
-
-            } else {
-                document.getElementById('loginModal').classList.remove('hidden');
-            }
-        });
-
-        document.getElementById('btnCancelarLogin').addEventListener('click', () => {
-            document.getElementById('loginModal').classList.add('hidden');
-        });
-
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
-            const feedback = document.getElementById('loginFeedback');
-
-            if (username === 'admin' && password === '142536789') {
-                isAdmin = true;
-                document.body.classList.add('user-logged-in');
-                document.getElementById('loginModal').classList.add('hidden');
-                document.getElementById('authButton').textContent = 'Logout';
-                document.getElementById('btnLimparRegistros').classList.remove('hidden');
-                document.getElementById('adminFields').classList.remove('hidden');
-                feedback.classList.add('hidden');
-                // Re-renderiza a lista para adicionar os botões de edição
-                iniciarListenerBancoDeDados();
-            } else {
-                feedback.classList.remove('hidden');
-            }
-        });
-
-        // Funções de edição e exclusão
-        function abrirModalEdicao(corredor) {
-            if (!isAdmin) return;
-            document.getElementById('editId').value = corredor.id;
-            document.getElementById('editNome').value = corredor.nome;
-            // Formata o tempo para o formato de 9 dígitos
-            const tempoStr = corredor.tempoMs.toString().padStart(9, '0');
-            document.getElementById('editTempo').value = tempoStr;
-            document.getElementById('editCpf').value = corredor.cpf;
-            document.getElementById('editCidade').value = corredor.cidade;
-            document.getElementById('editModal').classList.remove('hidden');
+        // Função para deletar um valor
+        function handleDelete(index, items) {
+            showModal("Tem certeza que deseja deletar este item?", false, async (isConfirmed) => {
+                if (isConfirmed) {
+                    const itemToDelete = items[index];
+                    try {
+                        await updateDoc(publicValuesRef, {
+                            items: arrayRemove(itemToDelete)
+                        });
+                    } catch (error) {
+                console.error("Erro ao deletar valor:", error);
+                displayError("Não foi possível deletar o valor. Tente novamente. Provável erro de permissão.");
+                    }
+                }
+            });
         }
 
-        async function deletarCorredor(id) {
-            if (!isAdmin) return;
-            try {
-                await deleteDoc(doc(db, `artifacts/${appId}/public/data/corredores`, id));
-                const feedback = document.createElement('p');
-                feedback.textContent = `Corredor excluído com sucesso!`;
-                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
-                document.getElementById('secaoClassificacao').appendChild(feedback);
-                setTimeout(() => feedback.remove(), 3000);
-            } catch (error) {
-                console.error("Erro ao deletar corredor no Firebase:", error);
-            }
-        }
+        // Adiciona event listeners aos botões
+        addValueButton.addEventListener('click', handleAdd);
 
-        document.getElementById('editForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!isAdmin) return;
-
-            const id = document.getElementById('editId').value;
-            const nome = document.getElementById('editNome').value;
-            const tempoStr = document.getElementById('editTempo').value;
-            const cpf = document.getElementById('editCpf').value;
-            const cidade = document.getElementById('editCidade').value;
-            const tempoMs = parseTempo(tempoStr);
-
-            try {
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/corredores`, id), {
-                    nome: nome,
-                    tempoMs: tempoMs,
-                    cpf: cpf,
-                    cidade: cidade
-                });
-                document.getElementById('editModal').classList.add('hidden');
-                const feedback = document.createElement('p');
-                feedback.textContent = `Corredor atualizado com sucesso!`;
-                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
-                document.getElementById('secaoClassificacao').appendChild(feedback);
-                setTimeout(() => feedback.remove(), 3000);
-            } catch (error) {
-                console.error("Erro ao atualizar corredor no Firebase:", error);
-            }
-        });
-
-        document.getElementById('btnCancelarEdicao').addEventListener('click', () => {
-            document.getElementById('editModal').classList.add('hidden');
-        });
-
-        // Lógica dos eventos
-        document.getElementById('formularioRegistro').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const nomeInput = document.getElementById('nome');
-            const tempoInput = document.getElementById('tempo');
-            const cpfInput = document.getElementById('cpf');
-            const cidadeInput = document.getElementById('cidade');
-
-            const nome = nomeInput.value;
-            const tempoStr = tempoInput.value;
-            const tempoMs = parseTempo(tempoStr);
-            const cpf = isAdmin ? cpfInput.value : '';
-            const cidade = isAdmin ? cidadeInput.value : '';
-
-            const novoCorredor = {
-                nome: nome,
-                tempoMs: tempoMs,
-                cpf: cpf,
-                cidade: cidade,
-                timestamp: new Date().toISOString()
-            };
-
-            try {
-                await addDoc(getCollectionRef(), novoCorredor);
-                const feedback = document.createElement('p');
-                feedback.textContent = `Corredor "${nome}" adicionado!`;
-                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
-                document.getElementById('secaoRegistro').appendChild(feedback);
-                setTimeout(() => feedback.remove(), 3000);
-            } catch (error) {
-                console.error("Erro ao adicionar documento no Firebase:", error);
-            }
-
-            nomeInput.value = '';
-            tempoInput.value = '';
-            if (isAdmin) {
-                cpfInput.value = '';
-                cidadeInput.value = '';
-            }
-        });
-
-        document.getElementById('btnVerClassificacao').addEventListener('click', () => {
-            alternarSecoes(true);
-        });
-
-        document.getElementById('btnVoltarRegistro').addEventListener('click', () => {
-            alternarSecoes(false);
-        });
-
-        document.getElementById('btnLimparRegistros').addEventListener('click', limparRegistros);
-
-        initializeFirebase();
-        alternarSecoes(false);
-        iniciarListenerBancoDeDados();
-
-        // O listener de autenticação só precisa ser usado para verificar o estado
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                console.log("Usuário autenticado:", user.uid);
-            } else {
-                console.log("Nenhum usuário logado.");
-            }
-        });
+        // Inicia a aplicação
+        initFirebase();
     </script>
 </body>
 </html>

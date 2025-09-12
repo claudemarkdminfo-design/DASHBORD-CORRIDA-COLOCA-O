@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro e Classificação de Corrida</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Libre+Franklin:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --cor-fundo: #0076c0;
+            --cor-letras: #fefefc;
+            --cor-destaque-1: #FFD700; /* Ouro */
+            --cor-destaque-2: #C0C0C0; /* Prata */
+            --cor-destaque-3: #CD7F32; /* Bronze */
+        }
+
+        body {
+            font-family: 'Libre Franklin', sans-serif;
+            background-color: var(--cor-fundo);
+            color: var(--cor-letras);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        h1, h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            color: var(--cor-letras);
+        }
+
+        /* Estilos específicos para os itens da lista de classificação */
+        .posicao-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-radius: 0.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .posicao-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .posicao-item .posicao {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2rem;
+            font-weight: bold;
+            width: 4rem;
+            text-align: center;
+            color: var(--cor-letras);
+        }
+        
+        .posicao-item.bg-yellow-400 .posicao,
+        .posicao-item.bg-gray-300 .posicao,
+        .posicao-item.bg-yellow-800 .posicao {
+            color: #111;
+        }
+
+        .posicao-item .nome {
+            flex-grow: 1;
+            margin-left: 1.5rem;
+            font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .posicao-item .tempo {
+            font-family: monospace;
+            font-weight: 700;
+            font-size: 1.5rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .tempo-container {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            min-width: 12rem;
+            text-align: right;
+        }
+
+        @media (max-width: 640px) {
+            .posicao-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .posicao-item .nome {
+                margin-left: 0;
+            }
+            .tempo-container {
+                margin-top: 0.5rem;
+                align-self: flex-end;
+            }
+        }
+
+    </style>
+</head>
+<body class="bg-[#0076c0] text-[#fefefc]">
+    
+    <div id="app" class="w-full max-w-2xl bg-black bg-opacity-10 p-6 rounded-xl shadow-lg flex flex-col items-center">
+
+        <!-- Seção de Registro -->
+        <div id="secaoRegistro" class="w-full">
+            <h1 class="text-4xl text-center mb-6">Registro de Corredores</h1>
+            <form id="formularioRegistro" class="space-y-4">
+                <div>
+                    <label for="nome" class="block mb-1 text-lg">Nome do Corredor</label>
+                    <input type="text" id="nome" required class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
+                </div>
+                <div>
+                    <label for="tempo" class="block mb-1 text-lg">Tempo (hhmmssms)</label>
+                    <input type="text" id="tempo" required pattern="\d{9}" placeholder="Ex: 000530123" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
+                    <p class="text-sm mt-1 text-[#fefefc]">Digite o tempo como 9 dígitos, sem separadores.</p>
+                </div>
+                <button type="submit" class="w-full bg-[#fefefc] text-[#0076c0] font-bold py-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Adicionar Corredor</button>
+            </form>
+            <button id="btnVerClassificacao" class="w-full mt-4 bg-transparent border-2 border-[#fefefc] text-[#fefefc] font-bold py-3 rounded-md transition-transform transform hover:scale-105">Ver Classificação</button>
+        </div>
+
+        <!-- Seção de Classificação -->
+        <div id="secaoClassificacao" class="w-full hidden">
+            <h1 class="text-4xl text-center mb-6">Classificação da Corrida</h1>
+            <div id="listaClassificacao" class="w-full space-y-3">
+                <!-- A lista de corredores será renderizada aqui pelo JavaScript -->
+            </div>
+            <button id="btnVoltarRegistro" class="w-full mt-6 bg-transparent border-2 border-[#fefefc] text-[#fefefc] font-bold py-3 rounded-md transition-transform transform hover:scale-105">Voltar para o Registro</button>
+        </div>
+    </div>
+
+    <script>
+        // Função para alternar entre as seções de registro e classificação
+        function alternarSecoes(mostrarClassificacao) {
+            document.getElementById('secaoRegistro').classList.toggle('hidden', mostrarClassificacao);
+            document.getElementById('secaoClassificacao').classList.toggle('hidden', !mostrarClassificacao);
+        }
+
+        // Funções para manipulação do tempo e dados
+        function parseTempo(tempoStr) {
+            // Extrai horas, minutos, segundos e milissegundos da string de 9 dígitos
+            const horas = Number(tempoStr.substring(0, 2));
+            const minutos = Number(tempoStr.substring(2, 4));
+            const segundos = Number(tempoStr.substring(4, 6));
+            const milissegundos = Number(tempoStr.substring(6, 9));
+            return horas * 3600000 + minutos * 60000 + segundos * 1000 + milissegundos;
+        }
+
+        function formatarTempo(tempoMs) {
+            const ms = tempoMs % 1000;
+            const segundosTotal = Math.floor(tempoMs / 1000);
+            const segundos = segundosTotal % 60;
+            const minutosTotal = Math.floor(segundosTotal / 60);
+            const minutos = minutosTotal % 60;
+            const horas = Math.floor(minutosTotal / 60);
+
+            const pad = num => num.toString().padStart(2, '0');
+            const padMs = num => num.toString().padStart(3, '0');
+
+            return `${pad(horas)}:${pad(minutos)}:${pad(segundos)}:${padMs(ms)}`;
+        }
+
+        function getCorredores() {
+            const corredoresJson = localStorage.getItem('corredores');
+            return corredoresJson ? JSON.parse(corredoresJson) : [];
+        }
+
+        function salvarCorredores(corredores) {
+            localStorage.setItem('corredores', JSON.stringify(corredores));
+        }
+
+        // Função para renderizar a lista de classificação
+        function renderizarClassificacao() {
+            const corredores = getCorredores();
+            corredores.sort((a, b) => a.tempoMs - b.tempoMs);
+            
+            const listaClassificacao = document.getElementById('listaClassificacao');
+            listaClassificacao.innerHTML = '';
+
+            if (corredores.length === 0) {
+                listaClassificacao.innerHTML = '<p class="text-center italic">Nenhum corredor registrado ainda.</p>';
+                return;
+            }
+
+            // Renderizar até o 10º lugar
+            corredores.slice(0, 10).forEach((corredor, index) => {
+                const posicao = index + 1;
+                const tempoFormatado = formatarTempo(corredor.tempoMs);
+                let destaqueClass = []; 
+                
+                if (posicao === 1) destaqueClass = ['bg-yellow-400', 'text-black'];
+                else if (posicao === 2) destaqueClass = ['bg-gray-300', 'text-black'];
+                else if (posicao === 3) destaqueClass = ['bg-yellow-800', 'text-white'];
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.classList.add('posicao-item', ...destaqueClass);
+                itemDiv.innerHTML = `
+                    <span class="posicao">${posicao}º</span>
+                    <span class="nome">${corredor.nome}</span>
+                    <div class="tempo-container">
+                        <span class="tempo">${tempoFormatado}</span>
+                    </div>
+                `;
+                listaClassificacao.appendChild(itemDiv);
+            });
+        }
+
+        // Lógica dos eventos
+        document.getElementById('formularioRegistro').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const nomeInput = document.getElementById('nome');
+            const tempoInput = document.getElementById('tempo');
+
+            const nome = nomeInput.value;
+            const tempoStr = tempoInput.value;
+            const tempoMs = parseTempo(tempoStr);
+
+            const corredores = getCorredores();
+            corredores.push({ nome, tempoMs });
+            salvarCorredores(corredores);
+
+            // Substituir o alert por um feedback visual
+            const feedback = document.createElement('p');
+            feedback.textContent = `Corredor "${nome}" adicionado!`;
+            feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
+            document.getElementById('secaoRegistro').appendChild(feedback);
+            setTimeout(() => feedback.remove(), 3000);
+
+            nomeInput.value = '';
+            tempoInput.value = '';
+        });
+
+        document.getElementById('btnVerClassificacao').addEventListener('click', () => {
+            renderizarClassificacao();
+            alternarSecoes(true);
+        });
+
+        document.getElementById('btnVoltarRegistro').addEventListener('click', () => {
+            alternarSecoes(false);
+        });
+
+        // Carregar a seção de registro por padrão
+        alternarSecoes(false);
+    </script>
+</body>
+</html>

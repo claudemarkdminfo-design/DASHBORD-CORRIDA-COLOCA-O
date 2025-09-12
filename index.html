@@ -32,7 +32,7 @@
             font-family: 'Bebas Neue', sans-serif;
             color: var(--cor-letras);
         }
-
+        
         /* Estilos específicos para os itens da lista de classificação */
         .posicao-item {
             display: flex;
@@ -88,12 +88,20 @@
             text-align: right;
         }
         
-        .edit-buttons {
+        /* Oculta os botões de edição e info extra por padrão */
+        .edit-buttons, .extra-info {
             display: none;
         }
 
-        .user-logged-in .edit-buttons {
+        /* Exibe apenas para o usuário logado como admin */
+        .user-logged-in .edit-buttons,
+        .user-logged-in .extra-info {
             display: flex;
+        }
+        
+        /* Oculta a visualização de CPF e Cidade no modo público */
+        .posicao-item:not(.user-logged-in) .extra-info {
+            display: none !important;
         }
 
         @media (max-width: 640px) {
@@ -114,72 +122,76 @@
 <body class="bg-[#0076c0] text-[#fefefc]">
     
     <div id="app" class="w-full max-w-2xl bg-black bg-opacity-10 p-6 rounded-xl shadow-lg flex flex-col items-center">
-        <!-- Logo da KDM -->
-        <img src="KDM - LOGO2.png" alt="Logo KDM" class="w-32 mb-6">
-        
         <!-- Login/Logout e Status -->
         <div class="w-full flex justify-between items-center mb-4">
-            <span id="authStatus" class="text-sm italic">Status: Anônimo</span>
-            <button id="authButton" class="bg-[#fefefc] text-[#0076c0] font-bold py-1 px-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Login</button>
+            <!-- Botão de Login/Logout -->
+            <button id="authButton" class="bg-[#fefefc] text-[#0076c0] font-bold py-1 px-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Login Admin</button>
+            <!-- Logo da KDM -->
+            <img src="KDM - LOGO2.png" alt="Logo KDM" class="w-32">
         </div>
 
-        <!-- Seção de Login -->
-        <div id="loginSection" class="w-full hidden">
-            <h2 class="text-2xl text-center mb-4">Acesso Administrativo</h2>
-            <form id="loginForm" class="space-y-4 mb-6">
-                <div>
-                    <label for="loginUsername" class="block mb-1 text-lg">Usuário</label>
-                    <input type="text" id="loginUsername" required class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
-                </div>
-                <div>
-                    <label for="loginPassword" class="block mb-1 text-lg">Senha</label>
-                    <input type="password" id="loginPassword" required class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
-                </div>
-                <button type="submit" class="w-full bg-[#fefefc] text-[#0076c0] font-bold py-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Entrar</button>
-                <button type="button" id="btnCancelarLogin" class="w-full mt-4 bg-transparent border-2 border-[#fefefc] text-[#fefefc] font-bold py-3 rounded-md transition-transform transform hover:scale-105">Cancelar</button>
-            </form>
-            <p id="loginFeedback" class="text-center text-red-500 font-bold hidden">Usuário ou senha inválidos.</p>
-        </div>
-
-        <!-- Seção de Registro -->
-        <div id="secaoRegistro" class="w-full">
-            <h1 class="text-4xl text-center mb-6">Registro de Corredores</h1>
-            <form id="formularioRegistro" class="space-y-4">
-                <div>
-                    <label for="nome" class="block mb-1 text-lg">Nome do Corredor</label>
-                    <input type="text" id="nome" required class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
-                </div>
-                <div>
-                    <label for="tempo" class="block mb-1 text-lg">Tempo (hhmmssms)</label>
-                    <input type="text" id="tempo" required pattern="\d{9}" placeholder="Ex: 000530123" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
-                    <p class="text-sm mt-1 text-[#fefefc]">Digite o tempo como 9 dígitos, sem separadores.</p>
-                </div>
-                
-                <!-- Campos ocultos para usuários logados -->
-                <div id="adminFields" class="space-y-4 hidden">
+        <!-- Seção de Login (Modal) - Inicialmente oculta -->
+        <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white text-gray-800 p-6 rounded-md shadow-lg w-full max-w-sm">
+                <h2 class="text-2xl text-center mb-4">Acesso Administrativo</h2>
+                <form id="loginForm" class="space-y-4 mb-6">
                     <div>
-                        <label for="cpf" class="block mb-1 text-lg">CPF</label>
-                        <input type="text" id="cpf" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
+                        <label for="loginUsername" class="block mb-1 text-lg">Usuário</label>
+                        <input type="text" id="loginUsername" required class="w-full p-3 rounded-md bg-gray-200 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
                     </div>
                     <div>
-                        <label for="cidade" class="block mb-1 text-lg">Cidade</label>
-                        <input type="text" id="cidade" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
+                        <label for="loginPassword" class="block mb-1 text-lg">Senha</label>
+                        <input type="password" id="loginPassword" required class="w-full p-3 rounded-md bg-gray-200 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
                     </div>
-                </div>
-
-                <button type="submit" class="w-full bg-[#fefefc] text-[#0076c0] font-bold py-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Adicionar Corredor</button>
-            </form>
-            <button id="btnVerClassificacao" class="w-full mt-4 bg-transparent border-2 border-[#fefefc] text-[#fefefc] font-bold py-3 rounded-md transition-transform transform hover:scale-105">Ver Classificação</button>
-            <button id="btnLimparRegistros" class="w-full mt-4 bg-transparent border-2 border-red-500 text-red-500 font-bold py-3 rounded-md transition-transform transform hover:scale-105">Limpar Todos os Registros</button>
-        </div>
-
-        <!-- Seção de Classificação -->
-        <div id="secaoClassificacao" class="w-full hidden">
-            <h1 class="text-4xl text-center mb-6">Classificação da Corrida</h1>
-            <div id="listaClassificacao" class="w-full space-y-3">
-                <!-- A lista de corredores será renderizada aqui pelo JavaScript -->
+                    <button type="submit" class="w-full bg-[#0076c0] text-white font-bold py-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Entrar</button>
+                    <button type="button" id="btnCancelarLogin" class="w-full bg-gray-400 text-gray-800 font-bold py-3 rounded-md transition-transform transform hover:scale-105">Cancelar</button>
+                </form>
+                <p id="loginFeedback" class="text-center text-red-500 font-bold hidden">Usuário ou senha inválidos.</p>
             </div>
-            <button id="btnVoltarRegistro" class="w-full mt-6 bg-transparent border-2 border-[#fefefc] text-[#fefefc] font-bold py-3 rounded-md transition-transform transform hover:scale-105">Voltar para o Registro</button>
+        </div>
+
+        <!-- Conteúdo principal da aplicação - Sempre visível -->
+        <div id="mainAppContent" class="w-full">
+            <!-- Seção de Registro -->
+            <div id="secaoRegistro" class="w-full">
+                <h1 class="text-4xl text-center mb-6">Registro de Corredores</h1>
+                <form id="formularioRegistro" class="space-y-4">
+                    <div>
+                        <label for="nome" class="block mb-1 text-lg">Nome do Corredor</label>
+                        <input type="text" id="nome" required class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
+                    </div>
+                    <div>
+                        <label for="tempo" class="block mb-1 text-lg">Tempo (hhmmssms)</label>
+                        <input type="text" id="tempo" required pattern="\d{9}" placeholder="Ex: 000530123" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
+                        <p class="text-sm mt-1 text-[#fefefc]">Digite o tempo como 9 dígitos, sem separadores.</p>
+                    </div>
+                    
+                    <!-- Campos que aparecem com o login de admin -->
+                    <div id="adminFields" class="space-y-4">
+                        <div>
+                            <label for="cpf" class="block mb-1 text-lg">CPF</label>
+                            <input type="text" id="cpf" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
+                        </div>
+                        <div>
+                            <label for="cidade" class="block mb-1 text-lg">Cidade</label>
+                            <input type="text" id="cidade" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-[#fefefc] text-[#0076c0] font-bold py-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Adicionar Corredor</button>
+                </form>
+                <button id="btnVerClassificacao" class="w-full mt-4 bg-transparent border-2 border-[#fefefc] text-[#fefefc] font-bold py-3 rounded-md transition-transform transform hover:scale-105">Ver Classificação</button>
+                <button id="btnLimparRegistros" class="w-full mt-4 bg-transparent border-2 border-red-500 text-red-500 font-bold py-3 rounded-md transition-transform transform hover:scale-105 hidden">Limpar Todos os Registros</button>
+            </div>
+
+            <!-- Seção de Classificação -->
+            <div id="secaoClassificacao" class="w-full hidden">
+                <h1 class="text-4xl text-center mb-6">Classificação da Corrida</h1>
+                <div id="listaClassificacao" class="w-full space-y-3">
+                    <!-- A lista de corredores será renderizada aqui pelo JavaScript -->
+                </div>
+                <button id="btnVoltarRegistro" class="w-full mt-6 bg-transparent border-2 border-[#fefefc] text-[#fefefc] font-bold py-3 rounded-md transition-transform transform hover:scale-105">Voltar para o Registro</button>
+            </div>
         </div>
     </div>
 
@@ -215,67 +227,38 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 
+        // Variáveis globais fornecidas pelo ambiente
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         let db, auth;
-        let authReady = false;
         let isAdmin = false;
+        let authReady = false;
+        const LOCAL_STORAGE_KEY = 'corredoresData';
+
+        // Funções para manipulação do localStorage
+        function salvarDadosLocalmente(dados) {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dados));
+        }
+
+        function carregarDadosLocalmente() {
+            const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+            return data ? JSON.parse(data) : [];
+        }
 
         async function initializeFirebase() {
             try {
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
-                
                 setLogLevel('debug');
                 
-                onAuthStateChanged(auth, (user) => {
-                    const authStatus = document.getElementById('authStatus');
-                    const authButton = document.getElementById('authButton');
-                    const adminFields = document.getElementById('adminFields');
-                    const editButtons = document.querySelectorAll('.edit-buttons');
+                await signInAnonymously(auth);
 
-                    if (user) {
-                        console.log("Usuário autenticado:", user.uid);
-                        authReady = true;
-                        authStatus.textContent = `Status: Logado (${user.uid})`; // Mostra o ID do usuário para depuração
-                        authButton.textContent = 'Logout';
-                        document.body.classList.add('user-logged-in');
-                        
-                        // Verificação de administrador baseada no uid
-                        isAdmin = user.uid === 'admin';
-                        if (isAdmin) {
-                             adminFields.classList.remove('hidden');
-                             editButtons.forEach(btn => btn.style.display = 'flex');
-                        } else {
-                            adminFields.classList.add('hidden');
-                            editButtons.forEach(btn => btn.style.display = 'none');
-                        }
-                        
-                        iniciarListenerBancoDeDados();
-                    } else {
-                        console.log("Usuário deslogado.");
-                        authReady = false;
-                        isAdmin = false;
-                        authStatus.textContent = 'Status: Anônimo';
-                        authButton.textContent = 'Login';
-                        document.body.classList.remove('user-logged-in');
-                        adminFields.classList.add('hidden');
-                        editButtons.forEach(btn => btn.style.display = 'none');
-                    }
-                });
-
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
             } catch (error) {
                 console.error("Erro ao inicializar Firebase:", error);
             }
@@ -332,51 +315,66 @@
                 
                 const itemDiv = document.createElement('div');
                 itemDiv.classList.add('posicao-item', ...destaqueClass);
-                
-                let extraInfo = '';
-                if (isAdmin) {
-                    extraInfo = `
-                        <div class="mt-2 text-sm text-gray-600 user-logged-in hidden">
-                            <p>CPF: ${corredor.cpf || 'N/A'}</p>
-                            <p>Cidade: ${corredor.cidade || 'N/A'}</p>
-                        </div>
-                    `;
-                }
 
-                itemDiv.innerHTML = `
-                    <span class="posicao">${posicao}º</span>
-                    <div class="flex-1 flex flex-col">
-                        <span class="nome">${corredor.nome}</span>
-                        ${extraInfo}
-                    </div>
-                    <div class="tempo-container">
-                        <span class="tempo">${tempoFormatado}</span>
-                    </div>
-                    <div class="edit-buttons flex ml-4 space-x-2 user-logged-in hidden">
-                        <button class="bg-blue-500 text-white px-2 py-1 rounded" onclick="abrirModalEdicao('${corredor.id}', '${corredor.nome}', '${corredor.tempoMs}', '${corredor.cpf || ''}', '${corredor.cidade || ''}')">Editar</button>
-                        <button class="bg-red-500 text-white px-2 py-1 rounded" onclick="deletarCorredor('${corredor.id}')">Excluir</button>
-                    </div>
+                const nomeElement = document.createElement('span');
+                nomeElement.classList.add('nome');
+                nomeElement.textContent = corredor.nome;
+
+                const tempoContainer = document.createElement('div');
+                tempoContainer.classList.add('tempo-container');
+                tempoContainer.innerHTML = `<span class="tempo">${tempoFormatado}</span>`;
+
+                const extraInfoDiv = document.createElement('div');
+                extraInfoDiv.classList.add('extra-info', 'mt-2', 'text-sm', 'text-gray-600', 'flex-1', 'flex-col');
+                extraInfoDiv.innerHTML = `
+                    <p>CPF: ${corredor.cpf || 'N/A'}</p>
+                    <p>Cidade: ${corredor.cidade || 'N/A'}</p>
                 `;
+
+                const editButtonsDiv = document.createElement('div');
+                editButtonsDiv.classList.add('edit-buttons', 'flex', 'ml-4', 'space-x-2');
+                editButtonsDiv.innerHTML = `
+                    <button class="bg-blue-500 text-white px-2 py-1 rounded" onclick="abrirModalEdicao('${corredor.id}', '${corredor.nome}', '${corredor.tempoMs}', '${corredor.cpf || ''}', '${corredor.cidade || ''}')">Editar</button>
+                    <button class="bg-red-500 text-white px-2 py-1 rounded" onclick="deletarCorredor('${corredor.id}')">Excluir</button>
+                `;
+                
+                itemDiv.appendChild(document.createElement('span')).classList.add('posicao');
+                itemDiv.querySelector('.posicao').textContent = `${posicao}º`;
+
+                const contentDiv = document.createElement('div');
+                contentDiv.classList.add('flex-1', 'flex', 'flex-col');
+                contentDiv.appendChild(nomeElement);
+                contentDiv.appendChild(extraInfoDiv);
+                itemDiv.appendChild(contentDiv);
+
+                itemDiv.appendChild(tempoContainer);
+                itemDiv.appendChild(editButtonsDiv);
+                
                 listaClassificacao.appendChild(itemDiv);
             });
         }
 
         function iniciarListenerBancoDeDados() {
-            if (authReady) {
-                const q = query(getCollectionRef());
-                onSnapshot(q, (snapshot) => {
-                    const corredores = [];
-                    snapshot.forEach((doc) => {
-                        corredores.push({ ...doc.data(), id: doc.id });
-                    });
-                    corredores.sort((a, b) => a.tempoMs - b.tempoMs);
-                    renderizarClassificacao(corredores);
-                }, (error) => {
-                    console.error("Erro ao obter dados em tempo real:", error);
-                });
-            } else {
-                console.log("Aguardando autenticação para iniciar o listener do banco de dados.");
+            // Verifica se a autenticação está pronta antes de iniciar o listener
+            if (!authReady) {
+                console.warn("A autenticação do Firebase ainda não está pronta.");
+                return;
             }
+            const q = query(getCollectionRef());
+            onSnapshot(q, (snapshot) => {
+                const corredores = [];
+                snapshot.forEach((doc) => {
+                    corredores.push({ ...doc.data(), id: doc.id });
+                });
+                corredores.sort((a, b) => a.tempoMs - b.tempoMs);
+                renderizarClassificacao(corredores);
+            }, (error) => {
+                console.error("Erro ao obter dados em tempo real:", error);
+                // Se houver um erro no Firebase, tenta carregar do localStorage como fallback
+                console.log("Tentando carregar dados do localStorage...");
+                const corredoresLocal = carregarDadosLocalmente();
+                renderizarClassificacao(corredoresLocal);
+            });
         }
         
         async function limparRegistros() {
@@ -388,6 +386,7 @@
                 setTimeout(() => feedback.remove(), 3000);
                 return;
             }
+
             const modal = document.createElement('div');
             modal.classList.add('fixed', 'inset-0', 'bg-black', 'bg-opacity-50', 'flex', 'items-center', 'justify-center', 'z-50');
             modal.innerHTML = `
@@ -403,22 +402,33 @@
 
             document.getElementById('confirmarLimpeza').addEventListener('click', async () => {
                 modal.remove();
-                const corredoresRef = getCollectionRef();
-                const corredoresSnapshot = await getDocs(corredoresRef);
-                const deletePromises = [];
-                corredoresSnapshot.forEach(doc => {
-                    deletePromises.push(deleteDoc(doc.ref));
-                });
-                try {
-                    await Promise.all(deletePromises);
-                    console.log("Todos os registros foram limpos com sucesso.");
+                if (authReady) {
+                    const corredoresRef = getCollectionRef();
+                    const corredoresSnapshot = await getDocs(corredoresRef);
+                    const deletePromises = [];
+                    corredoresSnapshot.forEach(doc => {
+                        deletePromises.push(deleteDoc(doc.ref));
+                    });
+                    try {
+                        await Promise.all(deletePromises);
+                        console.log("Todos os registros foram limpos com sucesso.");
+                        salvarDadosLocalmente([]); // Limpa o local storage também
+                        const feedback = document.createElement('p');
+                        feedback.textContent = `Todos os registros foram limpos!`;
+                        feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
+                        document.getElementById('secaoRegistro').appendChild(feedback);
+                        setTimeout(() => feedback.remove(), 3000);
+                    } catch (error) {
+                        console.error("Erro ao limpar os registros no Firebase:", error);
+                    }
+                } else {
+                    salvarDadosLocalmente([]);
+                    renderizarClassificacao([]);
                     const feedback = document.createElement('p');
-                    feedback.textContent = `Todos os registros foram limpos!`;
+                    feedback.textContent = `Registros locais foram limpos!`;
                     feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
                     document.getElementById('secaoRegistro').appendChild(feedback);
                     setTimeout(() => feedback.remove(), 3000);
-                } catch (error) {
-                    console.error("Erro ao limpar os registros:", error);
                 }
             });
 
@@ -429,16 +439,18 @@
 
         // Funções de login e logout
         document.getElementById('authButton').addEventListener('click', () => {
-            if (auth.currentUser && auth.currentUser.uid === 'admin') {
-                signOut(auth);
-                document.getElementById('loginSection').classList.add('hidden');
-            } else {
-                document.getElementById('loginSection').classList.toggle('hidden');
-            }
+             if (isAdmin) {
+                isAdmin = false;
+                document.body.classList.remove('user-logged-in');
+                document.getElementById('authButton').textContent = 'Login Admin';
+                document.getElementById('btnLimparRegistros').classList.add('hidden');
+             } else {
+                document.getElementById('loginModal').classList.remove('hidden');
+             }
         });
 
         document.getElementById('btnCancelarLogin').addEventListener('click', () => {
-            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('loginModal').classList.add('hidden');
         });
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -448,49 +460,12 @@
             const feedback = document.getElementById('loginFeedback');
 
             if (username === 'admin' && password === '142536789') {
-                // Autenticação local para o admin
-                try {
-                    // Crie um token de autenticação personalizado para "admin"
-                    const customToken = await auth.signInWithCustomToken(auth, initialAuthToken);
-                    // Como não podemos gerar um token personalizado aqui, vamos simular o login
-                    // Usando o signInWithCustomToken com o token inicial e um user ID "admin"
-                    // Nota: Apenas para fins de demonstração, o ideal seria ter um serviço para gerar esse token.
-                    // O método abaixo usa signInAnonymously e "promove" o usuário para "admin"
-                    // Isso é um hack, mas funciona no ambiente de demonstração
-                    // Em um ambiente real, você usaria um sistema de autenticação de verdade.
-                    const userCredential = await signInAnonymously(auth);
-                    const user = userCredential.user;
-                    if (user) {
-                      // Agora que o usuário anônimo está logado, podemos "fingir" que ele é o admin.
-                      // Isso é uma simulação, pois não há como alterar o UID do usuário.
-                      // O código de verificação 'isAdmin' dependerá do UID.
-                      // O melhor a fazer é logar com um custom token com o UID "admin".
-                      // O código já faz isso com o __initial_auth_token.
-                      // A autenticação do `admin` com `signInWithEmailAndPassword` seria a forma correta se
-                      // os usuários estivessem no Firebase Auth, mas o pedido foi por "usuário" e não "email".
-                      // Para manter o código simples e funcional com o pedido, verificamos a string.
-                      // Não há uma forma nativa de logar com um "usuário" no Firebase Auth
-                      // sem que ele seja um email ou um phone number.
-                      // Portanto, a solução mais simples é usar uma validação local
-                      // e então usar a autenticação anônima para persistência.
-                      const newAuth = getAuth(app);
-                      const newDb = getFirestore(app);
-                      onAuthStateChanged(newAuth, (user) => {
-                          if (user) {
-                              // Se o usuário logou, reatribua a isAdmin para true.
-                              isAdmin = true;
-                              document.getElementById('loginSection').classList.add('hidden');
-                              feedback.classList.add('hidden');
-                          }
-                      });
-                      await signOut(auth);
-                      await signInAnonymously(auth); // Sign in again to get a user
-                      console.log("Login de admin simulado com sucesso.");
-                    }
-                } catch (error) {
-                    console.error("Erro no login:", error);
-                    feedback.classList.remove('hidden');
-                }
+                isAdmin = true;
+                document.body.classList.add('user-logged-in');
+                document.getElementById('loginModal').classList.add('hidden');
+                document.getElementById('authButton').textContent = 'Logout';
+                document.getElementById('btnLimparRegistros').classList.remove('hidden');
+                feedback.classList.add('hidden');
             } else {
                 feedback.classList.remove('hidden');
             }
@@ -498,14 +473,7 @@
 
         // Funções de edição e exclusão
         window.abrirModalEdicao = (id, nome, tempoMs, cpf, cidade) => {
-            if (!isAdmin) {
-                const feedback = document.createElement('p');
-                feedback.textContent = `Você não tem permissão para editar os registros.`;
-                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-500');
-                document.getElementById('secaoClassificacao').appendChild(feedback);
-                setTimeout(() => feedback.remove(), 3000);
-                return;
-            }
+            if (!isAdmin) return;
             document.getElementById('editId').value = id;
             document.getElementById('editNome').value = nome;
             document.getElementById('editTempo').value = tempoMs.toString().padStart(9, '0');
@@ -515,23 +483,29 @@
         };
 
         window.deletarCorredor = async (id) => {
-            if (!isAdmin) {
-                 const feedback = document.createElement('p');
-                feedback.textContent = `Você não tem permissão para editar os registros.`;
-                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-500');
-                document.getElementById('secaoClassificacao').appendChild(feedback);
-                setTimeout(() => feedback.remove(), 3000);
-                return;
-            }
-            try {
-                await deleteDoc(doc(db, `artifacts/${appId}/public/data/corredores`, id));
+            if (!isAdmin) return;
+            if (authReady) {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/corredores`, id));
+                    const feedback = document.createElement('p');
+                    feedback.textContent = `Corredor excluído com sucesso!`;
+                    feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
+                    document.getElementById('secaoClassificacao').appendChild(feedback);
+                    setTimeout(() => feedback.remove(), 3000);
+                } catch (error) {
+                    console.error("Erro ao deletar corredor no Firebase:", error);
+                }
+            } else {
+                // Caso offline, remove do localStorage
+                let corredoresLocal = carregarDadosLocalmente();
+                corredoresLocal = corredoresLocal.filter(c => c.id !== id);
+                salvarDadosLocalmente(corredoresLocal);
+                renderizarClassificacao(corredoresLocal.sort((a, b) => a.tempoMs - b.tempoMs));
                 const feedback = document.createElement('p');
-                feedback.textContent = `Corredor excluído com sucesso!`;
+                feedback.textContent = `Corredor excluído localmente!`;
                 feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
                 document.getElementById('secaoClassificacao').appendChild(feedback);
                 setTimeout(() => feedback.remove(), 3000);
-            } catch (error) {
-                console.error("Erro ao deletar corredor:", error);
             }
         };
 
@@ -546,21 +520,38 @@
             const cidade = document.getElementById('editCidade').value;
             const tempoMs = parseTempo(tempoStr);
 
-            try {
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/corredores`, id), {
-                    nome: nome,
-                    tempoMs: tempoMs,
-                    cpf: cpf,
-                    cidade: cidade
-                });
-                document.getElementById('editModal').classList.add('hidden');
-                const feedback = document.createElement('p');
-                feedback.textContent = `Corredor atualizado com sucesso!`;
-                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
-                document.getElementById('secaoClassificacao').appendChild(feedback);
-                setTimeout(() => feedback.remove(), 3000);
-            } catch (error) {
-                console.error("Erro ao atualizar corredor:", error);
+            if (authReady) {
+                try {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/corredores`, id), {
+                        nome: nome,
+                        tempoMs: tempoMs,
+                        cpf: cpf,
+                        cidade: cidade
+                    });
+                    document.getElementById('editModal').classList.add('hidden');
+                    const feedback = document.createElement('p');
+                    feedback.textContent = `Corredor atualizado com sucesso!`;
+                    feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
+                    document.getElementById('secaoClassificacao').appendChild(feedback);
+                    setTimeout(() => feedback.remove(), 3000);
+                } catch (error) {
+                    console.error("Erro ao atualizar corredor no Firebase:", error);
+                }
+            } else {
+                // Caso offline, atualiza no localStorage
+                let corredoresLocal = carregarDadosLocalmente();
+                const index = corredoresLocal.findIndex(c => c.id === id);
+                if (index !== -1) {
+                    corredoresLocal[index] = { id, nome, tempoMs, cpf, cidade, timestamp: corredoresLocal[index].timestamp };
+                    salvarDadosLocalmente(corredoresLocal);
+                    renderizarClassificacao(corredoresLocal.sort((a, b) => a.tempoMs - b.tempoMs));
+                    document.getElementById('editModal').classList.add('hidden');
+                    const feedback = document.createElement('p');
+                    feedback.textContent = `Corredor atualizado localmente!`;
+                    feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
+                    document.getElementById('secaoClassificacao').appendChild(feedback);
+                    setTimeout(() => feedback.remove(), 3000);
+                }
             }
         });
 
@@ -581,44 +572,43 @@
             const cpf = cpfInput.value;
             const cidade = cidadeInput.value;
             const tempoMs = parseTempo(tempoStr);
+            const novoCorredor = {
+                nome: nome,
+                tempoMs: tempoMs,
+                cpf: cpf,
+                cidade: cidade,
+                timestamp: new Date().toISOString()
+            };
 
-            if (!authReady) {
+            if (authReady) {
+                try {
+                    await addDoc(getCollectionRef(), novoCorredor);
+                    const feedback = document.createElement('p');
+                    feedback.textContent = `Corredor "${nome}" adicionado!`;
+                    feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
+                    document.getElementById('secaoRegistro').appendChild(feedback);
+                    setTimeout(() => feedback.remove(), 3000);
+                } catch (error) {
+                    console.error("Erro ao adicionar documento no Firebase:", error);
+                }
+            } else {
+                // Se o Firebase não estiver pronto, salva no localStorage
+                let corredoresLocal = carregarDadosLocalmente();
+                novoCorredor.id = Date.now().toString(); // ID local simples
+                corredoresLocal.push(novoCorredor);
+                salvarDadosLocalmente(corredoresLocal);
+                renderizarClassificacao(corredoresLocal.sort((a, b) => a.tempoMs - b.tempoMs));
                 const feedback = document.createElement('p');
-                feedback.textContent = `Aguarde a autenticação para adicionar um corredor.`;
-                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
-                document.getElementById('secaoRegistro').appendChild(feedback);
-                setTimeout(() => feedback.remove(), 3000);
-                return;
-            }
-
-            try {
-                await addDoc(getCollectionRef(), {
-                    nome: nome,
-                    tempoMs: tempoMs,
-                    cpf: cpf,
-                    cidade: cidade,
-                    timestamp: new Date()
-                });
-
-                const feedback = document.createElement('p');
-                feedback.textContent = `Corredor "${nome}" adicionado!`;
+                feedback.textContent = `Corredor "${nome}" adicionado localmente!`;
                 feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
                 document.getElementById('secaoRegistro').appendChild(feedback);
                 setTimeout(() => feedback.remove(), 3000);
-
-                nomeInput.value = '';
-                tempoInput.value = '';
-                cpfInput.value = '';
-                cidadeInput.value = '';
-
-            } catch (error) {
-                console.error("Erro ao adicionar documento:", error);
-                const feedback = document.createElement('p');
-                feedback.textContent = `Ocorreu um erro ao adicionar o corredor.`;
-                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
-                document.getElementById('secaoRegistro').appendChild(feedback);
-                setTimeout(() => feedback.remove(), 3000);
             }
+
+            nomeInput.value = '';
+            tempoInput.value = '';
+            cpfInput.value = '';
+            cidadeInput.value = '';
         });
 
         document.getElementById('btnVerClassificacao').addEventListener('click', () => {
@@ -631,8 +621,24 @@
 
         document.getElementById('btnLimparRegistros').addEventListener('click', limparRegistros);
 
+        // Carrega dados locais no início para exibição imediata
+        const corredoresIniciais = carregarDadosLocalmente();
+        if (corredoresIniciais.length > 0) {
+            renderizarClassificacao(corredoresIniciais.sort((a, b) => a.tempoMs - b.tempoMs));
+        }
+
         initializeFirebase();
         alternarSecoes(false);
+
+        // Aguarda o estado de autenticação antes de iniciar o listener
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                authReady = true;
+                iniciarListenerBancoDeDados();
+            } else {
+                console.log("Usuário deslogado.");
+            }
+        });
     </script>
 </body>
 </html>

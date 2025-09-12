@@ -554,10 +554,17 @@
 
         document.getElementById('btnLimparRegistros').addEventListener('click', limparRegistros);
 
-        // Inicializa o Firebase e a autenticação
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
+const firebaseConfig = {
+
+  apiKey: "AIzaSyB2CQoSk7MB6qNDtwhZp_tx27HnFiqtyu4",
+  authDomain: "registros-5ddb8.firebaseapp.com",
+  projectId: "registros-5ddb8",
+  storageBucket: "registros-5ddb8.firebasestorage.app",
+  messagingSenderId: "838653309395",
+  appId: "1:838653309395:web:1dcb755bddba4376cc7f26",
+  measurementId: "G-7JC7ZNT9T7"
+};
+
         
         onAuthStateChanged(auth, async (user) => {
             if (user) {

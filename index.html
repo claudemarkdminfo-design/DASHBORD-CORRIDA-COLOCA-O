@@ -11,27 +11,6 @@
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
         }
-        /* Estilos para o modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background-color: white;
-            padding: 1.5rem;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            max-width: 90%;
-            width: 400px;
-        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
@@ -60,23 +39,11 @@
         <div id="error-message" class="hidden mt-4 text-center p-3 rounded-lg bg-red-100 text-red-800"></div>
     </div>
 
-    <!-- Modal para confirmação/prompt -->
-    <div id="customModal" class="modal-overlay hidden">
-        <div class="modal-content flex flex-col gap-4">
-            <p id="modalMessage" class="text-gray-800 text-lg"></p>
-            <input type="text" id="modalInput" class="hidden p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <div class="flex justify-end gap-2">
-                <button id="modalCancelBtn" class="bg-gray-300 text-gray-800 p-2 rounded-lg font-semibold hover:bg-gray-400 transition-colors">Cancelar</button>
-                <button id="modalConfirmBtn" class="bg-blue-600 text-white p-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors">Confirmar</button>
-            </div>
-        </div>
-    </div>
-
     <script type="module">
         // Importa as funções necessárias do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, arrayUnion, arrayRemove, updateDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, arrayUnion, arrayRemove, collection, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Variáveis globais fornecidas pelo ambiente
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -90,49 +57,15 @@
         const addValueButton = document.getElementById('addValueButton');
         const errorMessageElement = document.getElementById('error-message');
 
-        const customModal = document.getElementById('customModal');
-        const modalMessage = document.getElementById('modalMessage');
-        const modalInput = document.getElementById('modalInput');
-        const modalCancelBtn = document.getElementById('modalCancelBtn');
-        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
-
         let db;
         let auth;
         let publicValuesRef;
         let userId = null;
 
-        // Configura o nível de log do Firestore para depuração
-        setLogLevel('debug');
-
         // Função para exibir mensagens de erro
         function displayError(message) {
             errorMessageElement.textContent = `Erro: ${message}`;
             errorMessageElement.classList.remove('hidden');
-        }
-
-        // Função para mostrar um modal de confirmação ou prompt
-        function showModal(message, isPrompt, callback) {
-            modalMessage.textContent = message;
-            modalInput.classList.toggle('hidden', !isPrompt);
-            modalInput.value = isPrompt ? callback.defaultValue : '';
-            customModal.classList.remove('hidden');
-
-            const handleConfirm = () => {
-                customModal.classList.add('hidden');
-                callback(isPrompt ? modalInput.value : true);
-                modalConfirmBtn.removeEventListener('click', handleConfirm);
-                modalCancelBtn.removeEventListener('click', handleCancel);
-            };
-
-            const handleCancel = () => {
-                customModal.classList.add('hidden');
-                callback(isPrompt ? null : false);
-                modalConfirmBtn.removeEventListener('click', handleConfirm);
-                modalCancelBtn.removeEventListener('click', handleCancel);
-            };
-
-            modalConfirmBtn.addEventListener('click', handleConfirm);
-            modalCancelBtn.addEventListener('click', handleCancel);
         }
 
         // Função de inicialização
@@ -186,7 +119,7 @@
                 renderValues(items);
             }, (error) => {
                 console.error("Erro ao receber dados em tempo real:", error);
-                displayError("Erro na conexão com o banco de dados. Verifique as permissões de acesso.");
+                displayError("Erro na conexão com o banco de dados. Tente recarregar.");
             });
         }
 
@@ -245,43 +178,44 @@
         }
 
         // Função para editar um valor existente
-        function handleEdit(index, items) {
+        async function handleEdit(index, items) {
             const oldValue = items[index].value;
-            showModal("Digite o novo valor:", true, async (newValue) => {
-                if (newValue !== null && newValue.trim() !== oldValue) {
-                    try {
-                        const itemToUpdate = items[index];
-                        
-                        await updateDoc(publicValuesRef, {
-                            items: arrayRemove(itemToUpdate)
-                        });
-                        
-                        await updateDoc(publicValuesRef, {
-                            items: arrayUnion({ id: itemToUpdate.id, value: newValue.trim() })
-                        });
-                    } catch (error) {
-                console.error("Erro ao editar valor:", error);
-                displayError("Não foi possível editar o valor. Tente novamente. Provável erro de permissão.");
-                    }
+            const newValue = prompt("Digite o novo valor:", oldValue);
+            if (newValue && newValue.trim() !== oldValue) {
+                try {
+                    // Cria uma cópia do array para editar
+                    const updatedItems = [...items];
+                    const itemToUpdate = updatedItems[index];
+
+                    // Remove o item antigo e adiciona o novo (simulando uma atualização)
+                    await updateDoc(publicValuesRef, {
+                         items: arrayRemove(itemToUpdate)
+                    });
+                    
+                    await updateDoc(publicValuesRef, {
+                        items: arrayUnion({ id: itemToUpdate.id, value: newValue.trim() })
+                    });
+
+                } catch (error) {
+                    console.error("Erro ao editar valor:", error);
+                    displayError("Não foi possível editar o valor. Tente novamente.");
                 }
-            });
+            }
         }
 
         // Função para deletar um valor
-        function handleDelete(index, items) {
-            showModal("Tem certeza que deseja deletar este item?", false, async (isConfirmed) => {
-                if (isConfirmed) {
-                    const itemToDelete = items[index];
-                    try {
-                        await updateDoc(publicValuesRef, {
-                            items: arrayRemove(itemToDelete)
-                        });
-                    } catch (error) {
-                console.error("Erro ao deletar valor:", error);
-                displayError("Não foi possível deletar o valor. Tente novamente. Provável erro de permissão.");
-                    }
+        async function handleDelete(index, items) {
+            const itemToDelete = items[index];
+            if (confirm("Tem certeza que deseja deletar este item?")) {
+                try {
+                    await updateDoc(publicValuesRef, {
+                        items: arrayRemove(itemToDelete)
+                    });
+                } catch (error) {
+                    console.error("Erro ao deletar valor:", error);
+                    displayError("Não foi possível deletar o valor. Tente novamente.");
                 }
-            });
+            }
         }
 
         // Adiciona event listeners aos botões

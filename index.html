@@ -33,7 +33,6 @@
             color: var(--cor-letras);
         }
         
-        /* Estilos específicos para os itens da lista de classificação */
         .posicao-item {
             display: flex;
             align-items: center;
@@ -88,22 +87,45 @@
             text-align: right;
         }
         
-        /* Oculta os botões de edição e info extra por padrão */
         .edit-buttons, .extra-info {
             display: none;
         }
 
-        /* Exibe apenas para o usuário logado como admin */
         .user-logged-in .edit-buttons,
         .user-logged-in .extra-info {
             display: flex;
         }
         
-        /* Oculta a visualização de CPF e Cidade no modo público */
         .posicao-item:not(.user-logged-in) .extra-info {
             display: none !important;
         }
-
+        
+        /* Animação de scroll para a lista */
+        @keyframes scroll-up {
+            from {
+                transform: translateY(0);
+            }
+            to {
+                transform: translateY(-100%);
+            }
+        }
+        
+        .animated-list-container {
+            height: 200px; /* Altura do contêiner de scroll */
+            overflow: hidden;
+            margin-top: 1rem;
+            position: relative;
+        }
+        
+        .animated-list-wrapper {
+            animation: scroll-up linear infinite;
+            animation-duration: 30s; /* Duração da animação */
+        }
+        
+        .animated-list-container.admin-mode .animated-list-wrapper {
+            animation-play-state: paused;
+        }
+        
         @media (max-width: 640px) {
             .posicao-item {
                 flex-direction: column;
@@ -124,13 +146,11 @@
     <div id="app" class="w-full max-w-2xl bg-black bg-opacity-10 p-6 rounded-xl shadow-lg flex flex-col items-center">
         <!-- Login/Logout e Status -->
         <div class="w-full flex justify-between items-center mb-4">
-            <!-- Botão de Login/Logout -->
             <button id="authButton" class="bg-[#fefefc] text-[#0076c0] font-bold py-1 px-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Login Admin</button>
-            <!-- Logo da KDM -->
-            <!-- Usando um placeholder, já que a imagem local não está disponível na web -->
+            <!-- Nota: Substitua 'KDM - LOGO2.PNG' por uma URL de imagem válida. -->
             <img src="KDM - LOGO2.PNG" alt="Logo KDM" class="w-32">
         </div>
-        <p id="userIdDisplay" class="text-sm mb-2">ID de usuário: Carregando...</p>
+
         <!-- Seção de Login (Modal) - Inicialmente oculta -->
         <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
             <div class="bg-white text-gray-800 p-6 rounded-md shadow-lg w-full max-w-sm">
@@ -162,13 +182,16 @@
                         <input type="text" id="nome" required class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
                     </div>
                     <div>
-                        <label for="tempo" class="block mb-1 text-lg">Tempo (hhmmssms)</label>
-                        <input type="text" id="tempo" required pattern="\d{9}" placeholder="Ex: 000530123" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
-                        <p class="text-sm mt-1 text-[#fefefc]">Digite o tempo como 9 dígitos, sem separadores.</p>
+                        <label for="tempo" class="block mb-1 text-lg">Tempo (mm:ss:ms)</label>
+                        <input type="text" id="tempo" required placeholder="Ex: 05:30:123" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
+                        <p class="text-sm mt-1 text-[#fefefc]">O formato será preenchido automaticamente.</p>
                     </div>
                     
-                    <!-- Campos que aparecem com o login de admin -->
                     <div id="adminFields" class="space-y-4">
+                        <div>
+                            <label for="celular" class="block mb-1 text-lg">Telefone Celular</label>
+                            <input type="tel" id="celular" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
+                        </div>
                         <div>
                             <label for="cpf" class="block mb-1 text-lg">CPF</label>
                             <input type="text" id="cpf" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
@@ -179,7 +202,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="w-full bg-[#fefefc] text-[#0076c0] font-bold py-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Adicionar Corredor</button>
+                    <button type="submit" id="submitButton" class="w-full bg-[#fefefc] text-[#0076c0] font-bold py-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Adicionar Corredor</button>
                 </form>
                 <button id="btnVerClassificacao" class="w-full mt-4 bg-transparent border-2 border-[#fefefc] text-[#fefefc] font-bold py-3 rounded-md transition-transform transform hover:scale-105">Ver Classificação</button>
                 <button id="btnLimparRegistros" class="w-full mt-4 bg-transparent border-2 border-red-500 text-red-500 font-bold py-3 rounded-md transition-transform transform hover:scale-105 hidden">Limpar Todos os Registros</button>
@@ -188,13 +211,21 @@
             <!-- Seção de Classificação -->
             <div id="secaoClassificacao" class="w-full hidden">
                 <h1 class="text-4xl text-center mb-6">Classificação da Corrida</h1>
-                <div id="listaClassificacao" class="w-full space-y-3">
-                    <!-- A lista de corredores será renderizada aqui pelo JavaScript -->
+                <!-- Top 3 Estático -->
+                <div id="top3Classificacao" class="w-full space-y-3"></div>
+                <!-- Lista animada a partir do 4º colocado -->
+                <div id="animated-list-container" class="animated-list-container">
+                    <div id="scrollingList" class="animated-list-wrapper space-y-3">
+                        <!-- Itens da lista serão inseridos aqui pelo JS -->
+                    </div>
                 </div>
                 <button id="btnVoltarRegistro" class="w-full mt-6 bg-transparent border-2 border-[#fefefc] text-[#fefefc] font-bold py-3 rounded-md transition-transform transform hover:scale-105">Voltar para o Registro</button>
             </div>
         </div>
     </div>
+    
+    <!-- ID do Usuário - Mover para o canto inferior esquerdo -->
+    <p id="userIdDisplay" class="fixed bottom-2 left-2 text-xs opacity-75 z-50">Carregando...</p>
 
     <!-- Modal de Edição -->
     <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
@@ -207,8 +238,12 @@
                     <input type="text" id="editNome" required class="w-full p-2 rounded-md bg-gray-200">
                 </div>
                 <div>
-                    <label for="editTempo" class="block mb-1">Tempo (hhmmssms)</label>
-                    <input type="text" id="editTempo" required pattern="\d{9}" class="w-full p-2 rounded-md bg-gray-200">
+                    <label for="editTempo" class="block mb-1">Tempo (mm:ss:ms)</label>
+                    <input type="text" id="editTempo" required class="w-full p-2 rounded-md bg-gray-200">
+                </div>
+                <div>
+                    <label for="editCelular" class="block mb-1">Telefone Celular</label>
+                    <input type="tel" id="editCelular" class="w-full p-2 rounded-md bg-gray-200">
                 </div>
                 <div>
                     <label for="editCpf" class="block mb-1">CPF</label>
@@ -227,21 +262,33 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, getDocs, doc, updateDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, getDocs, doc, updateDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
 
-        // Variáveis globais fornecidas pelo ambiente
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2CQoSk7MB6qNDtwhZp_tx27HnFiqtyu4",
+            authDomain: "registros-5ddb8.firebaseapp.com",
+            projectId: "registros-5ddb8",
+            storageBucket: "registros-5ddb8.firebase-app.com",
+            messagingSenderId: "838653309395",
+            appId: "1:838653309395:web:1dcb755bddba4376cc7f26",
+            measurementId: "G-7JC7ZNT9T7"
+        };
 
         let db, auth;
         let isAdmin = false;
         let authReady = false;
 
-        // Configura o nível de log do Firebase para debug
         setLogLevel('debug');
+
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        const submitButton = document.getElementById('submitButton');
+        const formularioRegistro = document.getElementById('formularioRegistro');
+        const animatedListContainer = document.getElementById('animated-list-container');
 
         function alternarSecoes(mostrarClassificacao) {
             document.getElementById('secaoRegistro').classList.toggle('hidden', mostrarClassificacao);
@@ -249,37 +296,87 @@
         }
 
         function parseTempo(tempoStr) {
-            if (!tempoStr || tempoStr.length !== 9) {
-                return 0;
-            }
-            const horas = Number(tempoStr.substring(0, 2));
-            const minutos = Number(tempoStr.substring(2, 4));
-            const segundos = Number(tempoStr.substring(4, 6));
-            const milissegundos = Number(tempoStr.substring(6, 9));
-            return horas * 3600000 + minutos * 60000 + segundos * 1000 + milissegundos;
+            if (!tempoStr) return 0;
+            const apenasDigitos = tempoStr.replace(/\D/g, '');
+            const minutos = Number(apenasDigitos.substring(0, 2));
+            const segundos = Number(apenasDigitos.substring(2, 4));
+            const milissegundos = Number(apenasDigitos.substring(4, 7));
+            return minutos * 60000 + segundos * 1000 + milissegundos;
         }
 
         function formatarTempo(tempoMs) {
-            const ms = tempoMs % 1000;
-            const segundosTotal = Math.floor(tempoMs / 1000);
-            const segundos = segundosTotal % 60;
-            const minutosTotal = Math.floor(segundosTotal / 60);
-            const minutos = minutosTotal % 60;
-            const horas = Math.floor(minutosTotal / 60);
+            const minutos = Math.floor(tempoMs / 60000);
+            const segundos = Math.floor((tempoMs % 60000) / 1000);
+            const milissegundos = tempoMs % 1000;
 
             const pad = num => num.toString().padStart(2, '0');
             const padMs = num => num.toString().padStart(3, '0');
 
-            return `${pad(horas)}:${pad(minutos)}:${pad(segundos)}:${padMs(ms)}`;
+            return `${pad(minutos)}:${pad(segundos)}:${padMs(milissegundos)}`;
         }
+        
+        document.getElementById('tempo').addEventListener('input', (e) => {
+            let input = e.target.value.replace(/\D/g, '');
+            let formattedInput = '';
+
+            if (input.length > 0) {
+                formattedInput += input.substring(0, 2);
+            }
+            if (input.length > 2) {
+                formattedInput += ':' + input.substring(2, 4);
+            }
+            if (input.length > 4) {
+                formattedInput += ':' + input.substring(4, 7);
+            }
+
+            e.target.value = formattedInput;
+        });
+
+        document.getElementById('cpf').addEventListener('input', (e) => {
+            let input = e.target.value.replace(/\D/g, '');
+            let formattedCpf = '';
+            
+            if (input.length > 0) {
+                formattedCpf += input.substring(0, 3);
+            }
+            if (input.length > 3) {
+                formattedCpf += '.' + input.substring(3, 6);
+            }
+            if (input.length > 6) {
+                formattedCpf += '.' + input.substring(6, 9);
+            }
+            if (input.length > 9) {
+                formattedCpf += '-' + input.substring(9, 11);
+            }
+            
+            e.target.value = formattedCpf;
+        });
+
+        document.getElementById('nome').addEventListener('input', (e) => {
+            let input = e.target.value;
+            e.target.value = input.split(' ').map(word => {
+                if (word.length === 0) return '';
+                return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+            }).join(' ');
+        });
 
         function renderizarClassificacao(corredores) {
-            const listaClassificacao = document.getElementById('listaClassificacao');
-            listaClassificacao.innerHTML = '';
+            const top3Classificacao = document.getElementById('top3Classificacao');
+            const scrollingList = document.getElementById('scrollingList');
+            top3Classificacao.innerHTML = '';
+            scrollingList.innerHTML = '';
 
             if (corredores.length === 0) {
-                listaClassificacao.innerHTML = '<p class="text-center italic">Nenhum corredor registrado ainda.</p>';
+                top3Classificacao.innerHTML = '<p class="text-center italic">Nenhum corredor registrado ainda.</p>';
+                animatedListContainer.classList.add('admin-mode');
                 return;
+            }
+            
+            // Pausa a animação se for admin
+            if (isAdmin) {
+                animatedListContainer.classList.add('admin-mode');
+            } else {
+                animatedListContainer.classList.remove('admin-mode');
             }
 
             corredores.forEach((corredor, index) => {
@@ -293,6 +390,10 @@
                 
                 const itemDiv = document.createElement('div');
                 itemDiv.classList.add('posicao-item', ...destaqueClass);
+                
+                if (isAdmin) {
+                    itemDiv.classList.add('user-logged-in');
+                }
 
                 const nomeElement = document.createElement('span');
                 nomeElement.classList.add('nome');
@@ -305,6 +406,7 @@
                 const extraInfoDiv = document.createElement('div');
                 extraInfoDiv.classList.add('extra-info', 'mt-2', 'text-sm', 'text-gray-600', 'flex-1', 'flex-col');
                 extraInfoDiv.innerHTML = `
+                    <p>Celular: ${corredor.celular || 'N/A'}</p>
                     <p>CPF: ${corredor.cpf || 'N/A'}</p>
                     <p>Cidade: ${corredor.cidade || 'N/A'}</p>
                 `;
@@ -312,7 +414,7 @@
                 const editButtonsDiv = document.createElement('div');
                 editButtonsDiv.classList.add('edit-buttons', 'flex', 'ml-4', 'space-x-2');
                 editButtonsDiv.innerHTML = `
-                    <button class="bg-blue-500 text-white px-2 py-1 rounded" onclick="abrirModalEdicao('${corredor.id}', '${corredor.nome}', '${corredor.tempoMs}', '${corredor.cpf || ''}', '${corredor.cidade || ''}')">Editar</button>
+                    <button class="bg-blue-500 text-white px-2 py-1 rounded" onclick="abrirModalEdicao('${corredor.id}', '${corredor.nome}', '${corredor.tempoMs}', '${corredor.celular || ''}', '${corredor.cpf || ''}', '${corredor.cidade || ''}')">Editar</button>
                     <button class="bg-red-500 text-white px-2 py-1 rounded" onclick="deletarCorredor('${corredor.id}')">Excluir</button>
                 `;
                 
@@ -328,7 +430,11 @@
                 itemDiv.appendChild(tempoContainer);
                 itemDiv.appendChild(editButtonsDiv);
                 
-                listaClassificacao.appendChild(itemDiv);
+                if (posicao <= 3) {
+                    top3Classificacao.appendChild(itemDiv);
+                } else {
+                    scrollingList.appendChild(itemDiv);
+                }
             });
         }
 
@@ -351,7 +457,6 @@
                 renderizarClassificacao(corredores);
             }, (error) => {
                 console.error("Erro ao obter dados em tempo real:", error);
-                // Se houver um erro no Firebase, não faz nada
             });
         }
         
@@ -406,7 +511,6 @@
             });
         }
 
-        // Funções de login e logout
         document.getElementById('authButton').addEventListener('click', () => {
             if (isAdmin) {
                 isAdmin = false;
@@ -422,6 +526,17 @@
             document.getElementById('loginModal').classList.add('hidden');
         });
 
+        async function forceRenderClassificacao() {
+             const q = query(getCollectionRef());
+             const snapshot = await getDocs(q); // Obtém uma cópia dos dados
+             const corredores = [];
+             snapshot.forEach((doc) => {
+                 corredores.push({ ...doc.data(), id: doc.id });
+             });
+             corredores.sort((a, b) => a.tempoMs - b.tempoMs);
+             renderizarClassificacao(corredores);
+         }
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('loginUsername').value;
@@ -435,17 +550,20 @@
                 document.getElementById('authButton').textContent = 'Logout';
                 document.getElementById('btnLimparRegistros').classList.remove('hidden');
                 feedback.classList.add('hidden');
+                // Força uma nova renderização da classificação para aplicar a pausa na animação
+                forceRenderClassificacao();
             } else {
                 feedback.classList.remove('hidden');
             }
         });
 
-        // Funções de edição e exclusão
-        window.abrirModalEdicao = (id, nome, tempoMs, cpf, cidade) => {
+        window.abrirModalEdicao = (id, nome, tempoMs, celular, cpf, cidade) => {
             if (!isAdmin) return;
             document.getElementById('editId').value = id;
             document.getElementById('editNome').value = nome;
-            document.getElementById('editTempo').value = tempoMs.toString().padStart(9, '0');
+            const tempoFormatado = formatarTempo(Number(tempoMs));
+            document.getElementById('editTempo').value = tempoFormatado;
+            document.getElementById('editCelular').value = celular;
             document.getElementById('editCpf').value = cpf;
             document.getElementById('editCidade').value = cidade;
             document.getElementById('editModal').classList.remove('hidden');
@@ -474,6 +592,7 @@
             const id = document.getElementById('editId').value;
             const nome = document.getElementById('editNome').value;
             const tempoStr = document.getElementById('editTempo').value;
+            const celular = document.getElementById('editCelular').value;
             const cpf = document.getElementById('editCpf').value;
             const cidade = document.getElementById('editCidade').value;
             const tempoMs = parseTempo(tempoStr);
@@ -483,6 +602,7 @@
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/corredores`, id), {
                         nome: nome,
                         tempoMs: tempoMs,
+                        celular: celular,
                         cpf: cpf,
                         cidade: cidade
                     });
@@ -502,44 +622,52 @@
             document.getElementById('editModal').classList.add('hidden');
         });
 
-        // Lógica dos eventos
-        document.getElementById('formularioRegistro').addEventListener('submit', async (e) => {
+        formularioRegistro.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!authReady) {
+                const feedback = document.createElement('p');
+                feedback.textContent = `O aplicativo está carregando. Tente novamente em instantes.`;
+                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-500');
+                document.getElementById('secaoRegistro').appendChild(feedback);
+                setTimeout(() => feedback.remove(), 3000);
+                return;
+            }
+            
             const nomeInput = document.getElementById('nome');
             const tempoInput = document.getElementById('tempo');
+            const celularInput = document.getElementById('celular');
             const cpfInput = document.getElementById('cpf');
             const cidadeInput = document.getElementById('cidade');
 
             const nome = nomeInput.value;
             const tempoStr = tempoInput.value;
+            const celular = celularInput.value;
             const cpf = cpfInput.value;
             const cidade = cidadeInput.value;
             const tempoMs = parseTempo(tempoStr);
             const novoCorredor = {
                 nome: nome,
                 tempoMs: tempoMs,
+                celular: celular,
                 cpf: cpf,
                 cidade: cidade,
                 timestamp: new Date().toISOString()
             };
 
-            if (authReady) {
-                try {
-                    await addDoc(getCollectionRef(), novoCorredor);
-                    const feedback = document.createElement('p');
-                    feedback.textContent = `Corredor "${nome}" adicionado!`;
-                    feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
-                    document.getElementById('secaoRegistro').appendChild(feedback);
-                    setTimeout(() => feedback.remove(), 3000);
-                } catch (error) {
-                    console.error("Erro ao adicionar documento no Firebase:", error);
-                }
-            } else {
-                console.error("Firebase Auth not ready. Cannot save data.");
+            try {
+                await addDoc(getCollectionRef(), novoCorredor);
+                const feedback = document.createElement('p');
+                feedback.textContent = `Corredor "${nome}" adicionado!`;
+                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
+                document.getElementById('secaoRegistro').appendChild(feedback);
+                setTimeout(() => feedback.remove(), 3000);
+            } catch (error) {
+                console.error("Erro ao adicionar documento no Firebase:", error);
             }
 
             nomeInput.value = '';
             tempoInput.value = '';
+            celularInput.value = '';
             cpfInput.value = '';
             cidadeInput.value = '';
         });
@@ -554,46 +682,30 @@
 
         document.getElementById('btnLimparRegistros').addEventListener('click', limparRegistros);
 
-const firebaseConfig = {
-
-  apiKey: "AIzaSyB2CQoSk7MB6qNDtwhZp_tx27HnFiqtyu4",
-  authDomain: "registros-5ddb8.firebaseapp.com",
-  projectId: "registros-5ddb8",
-  storageBucket: "registros-5ddb8.firebasestorage.app",
-  messagingSenderId: "838653309395",
-  appId: "1:838653309395:web:1dcb755bddba4376cc7f26",
-  measurementId: "G-7JC7ZNT9T7"
-};
-
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        db = getFirestore(app);
+        auth = getAuth(app);
         
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 authReady = true;
-                document.getElementById('userIdDisplay').textContent = `ID de usuário: ${user.uid}`;
-                console.log("Usuário autenticado:", user.uid);
+                userIdDisplay.textContent = `ID de usuário: ${user.uid}`;
+                submitButton.disabled = false;
                 iniciarListenerBancoDeDados();
+                console.log("Usuário autenticado:", user.uid);
             } else {
-                // Tenta autenticação anônima se não houver token
-                if (initialAuthToken) {
-                    try {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                        console.log("Autenticado com token customizado.");
-                    } catch (error) {
-                        console.error("Erro ao autenticar com token customizado:", error);
-                    }
-                } else {
-                    try {
-                        await signInAnonymously(auth);
-                        console.log("Autenticado anonimamente.");
-                    } catch (error) {
-                        console.error("Erro ao autenticar anonimamente:", error);
-                    }
+                try {
+                    await signInAnonymously(auth);
+                    console.log("Autenticado anonimamente.");
+                } catch (error) {
+                    console.error("Erro ao autenticar anonimamente:", error);
                 }
             }
         });
 
-        // Configuração inicial da UI
         alternarSecoes(false);
+        submitButton.disabled = true;
     </script>
 </body>
 </html>

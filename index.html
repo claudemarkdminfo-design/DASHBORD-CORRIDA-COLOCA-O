@@ -252,15 +252,14 @@
 
         async function initializeFirebase() {
             try {
-                const firebaseConfig = {
-    apiKey: "AizasyBzQoQk7Mb6nDtWhzp_tx27HnF1qtyu4",
-    authDomain: "registros-5ddb8.firebaseapp.com",
-    projectId: "registros-5ddb8",
-    storageBucket: "registros-5ddb8.appspot.com",
-    messagingSenderId: "838653309395",
-    appId: "1:838653309395:web:1dcb755bddba4376cc7f26",
-    measurementId: "G-7JC72NT9T7"
-}; catch (error) {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                setLogLevel('debug');
+                
+                await signInAnonymously(auth);
+
+            } catch (error) {
                 console.error("Erro ao inicializar Firebase:", error);
             }
         }

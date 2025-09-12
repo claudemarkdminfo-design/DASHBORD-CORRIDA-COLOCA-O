@@ -124,6 +124,7 @@
                 <button type="submit" class="w-full bg-[#fefefc] text-[#0076c0] font-bold py-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Adicionar Corredor</button>
             </form>
             <button id="btnVerClassificacao" class="w-full mt-4 bg-transparent border-2 border-[#fefefc] text-[#fefefc] font-bold py-3 rounded-md transition-transform transform hover:scale-105">Ver Classificação</button>
+            <button id="btnLimparRegistros" class="w-full mt-4 bg-transparent border-2 border-red-500 text-red-500 font-bold py-3 rounded-md transition-transform transform hover:scale-105">Limpar Todos os Registros</button>
         </div>
 
         <!-- Seção de Classificação -->
@@ -136,16 +137,65 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+
+        // Variáveis globais de ambiente
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth;
+        let authReady = false;
+
+        // Função para inicializar o Firebase e autenticar
+        async function initializeFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                
+                setLogLevel('debug'); // Ativar logs de depuração do Firebase
+                
+                // Listener de autenticação
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        console.log("Usuário autenticado:", user.uid);
+                        authReady = true;
+                        // Inicia o listener do banco de dados quando a autenticação estiver pronta
+                        iniciarListenerBancoDeDados();
+                    } else {
+                        console.log("Usuário deslogado.");
+                        authReady = false;
+                    }
+                });
+
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Erro ao inicializar Firebase:", error);
+            }
+        }
+        
+        // Coleção pública para salvar os registros
+        const getCollectionRef = () => {
+            return collection(db, `artifacts/${appId}/public/data/corredores`);
+        };
+
         // Função para alternar entre as seções de registro e classificação
         function alternarSecoes(mostrarClassificacao) {
             document.getElementById('secaoRegistro').classList.toggle('hidden', mostrarClassificacao);
             document.getElementById('secaoClassificacao').classList.toggle('hidden', !mostrarClassificacao);
         }
 
-        // Funções para manipulação do tempo e dados
+        // Funções para manipulação do tempo
         function parseTempo(tempoStr) {
-            // Extrai horas, minutos, segundos e milissegundos da string de 9 dígitos
             const horas = Number(tempoStr.substring(0, 2));
             const minutos = Number(tempoStr.substring(2, 4));
             const segundos = Number(tempoStr.substring(4, 6));
@@ -167,20 +217,8 @@
             return `${pad(horas)}:${pad(minutos)}:${pad(segundos)}:${padMs(ms)}`;
         }
 
-        function getCorredores() {
-            const corredoresJson = localStorage.getItem('corredores');
-            return corredoresJson ? JSON.parse(corredoresJson) : [];
-        }
-
-        function salvarCorredores(corredores) {
-            localStorage.setItem('corredores', JSON.stringify(corredores));
-        }
-
         // Função para renderizar a lista de classificação
-        function renderizarClassificacao() {
-            const corredores = getCorredores();
-            corredores.sort((a, b) => a.tempoMs - b.tempoMs);
-            
+        function renderizarClassificacao(corredores) {
             const listaClassificacao = document.getElementById('listaClassificacao');
             listaClassificacao.innerHTML = '';
 
@@ -189,7 +227,6 @@
                 return;
             }
 
-            // Renderizar até o 10º lugar
             corredores.slice(0, 10).forEach((corredor, index) => {
                 const posicao = index + 1;
                 const tempoFormatado = formatarTempo(corredor.tempoMs);
@@ -212,8 +249,69 @@
             });
         }
 
+        // Iniciar o listener do banco de dados quando a autenticação estiver pronta
+        function iniciarListenerBancoDeDados() {
+            if (authReady) {
+                const q = query(getCollectionRef());
+                onSnapshot(q, (snapshot) => {
+                    const corredores = [];
+                    snapshot.forEach((doc) => {
+                        corredores.push({ ...doc.data(), id: doc.id });
+                    });
+                    corredores.sort((a, b) => a.tempoMs - b.tempoMs);
+                    renderizarClassificacao(corredores);
+                }, (error) => {
+                    console.error("Erro ao obter dados em tempo real:", error);
+                });
+            } else {
+                console.log("Aguardando autenticação para iniciar o listener do banco de dados.");
+            }
+        }
+        
+        // Função para limpar todos os registros
+        async function limparRegistros() {
+            // Em vez de usar 'confirm()', criamos um modal personalizado
+            const modal = document.createElement('div');
+            modal.classList.add('fixed', 'inset-0', 'bg-black', 'bg-opacity-50', 'flex', 'items-center', 'justify-center', 'z-50');
+            modal.innerHTML = `
+                <div class="bg-white text-gray-800 p-6 rounded-md shadow-lg text-center">
+                    <p class="mb-4">Tem certeza que deseja limpar todos os registros? Esta ação é irreversível.</p>
+                    <div class="flex justify-center space-x-4">
+                        <button id="confirmarLimpeza" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">Sim, Limpar</button>
+                        <button id="cancelarLimpeza" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">Cancelar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('confirmarLimpeza').addEventListener('click', async () => {
+                modal.remove();
+                const corredoresRef = getCollectionRef();
+                const corredoresSnapshot = await getDocs(corredoresRef);
+                const deletePromises = [];
+                corredoresSnapshot.forEach(doc => {
+                    deletePromises.push(deleteDoc(doc.ref));
+                });
+                try {
+                    await Promise.all(deletePromises);
+                    console.log("Todos os registros foram limpos com sucesso.");
+                    const feedback = document.createElement('p');
+                    feedback.textContent = `Todos os registros foram limpos!`;
+                    feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
+                    document.getElementById('secaoRegistro').appendChild(feedback);
+                    setTimeout(() => feedback.remove(), 3000);
+                } catch (error) {
+                    console.error("Erro ao limpar os registros:", error);
+                }
+            });
+
+            document.getElementById('cancelarLimpeza').addEventListener('click', () => {
+                modal.remove();
+            });
+        }
+
         // Lógica dos eventos
-        document.getElementById('formularioRegistro').addEventListener('submit', (e) => {
+        document.getElementById('formularioRegistro').addEventListener('submit', async (e) => {
             e.preventDefault();
             const nomeInput = document.getElementById('nome');
             const tempoInput = document.getElementById('tempo');
@@ -222,23 +320,44 @@
             const tempoStr = tempoInput.value;
             const tempoMs = parseTempo(tempoStr);
 
-            const corredores = getCorredores();
-            corredores.push({ nome, tempoMs });
-            salvarCorredores(corredores);
+            if (!authReady) {
+                // Em vez de alert(), usamos um feedback visual
+                const feedback = document.createElement('p');
+                feedback.textContent = `Aguarde a autenticação para adicionar um corredor.`;
+                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
+                document.getElementById('secaoRegistro').appendChild(feedback);
+                setTimeout(() => feedback.remove(), 3000);
+                return;
+            }
 
-            // Substituir o alert por um feedback visual
-            const feedback = document.createElement('p');
-            feedback.textContent = `Corredor "${nome}" adicionado!`;
-            feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
-            document.getElementById('secaoRegistro').appendChild(feedback);
-            setTimeout(() => feedback.remove(), 3000);
+            try {
+                await addDoc(getCollectionRef(), {
+                    nome: nome,
+                    tempoMs: tempoMs,
+                    timestamp: new Date()
+                });
 
-            nomeInput.value = '';
-            tempoInput.value = '';
+                const feedback = document.createElement('p');
+                feedback.textContent = `Corredor "${nome}" adicionado!`;
+                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
+                document.getElementById('secaoRegistro').appendChild(feedback);
+                setTimeout(() => feedback.remove(), 3000);
+
+                nomeInput.value = '';
+                tempoInput.value = '';
+
+            } catch (error) {
+                console.error("Erro ao adicionar documento:", error);
+                // Em vez de alert(), usamos um feedback visual
+                const feedback = document.createElement('p');
+                feedback.textContent = `Ocorreu um erro ao adicionar o corredor.`;
+                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
+                document.getElementById('secaoRegistro').appendChild(feedback);
+                setTimeout(() => feedback.remove(), 3000);
+            }
         });
 
         document.getElementById('btnVerClassificacao').addEventListener('click', () => {
-            renderizarClassificacao();
             alternarSecoes(true);
         });
 
@@ -246,7 +365,10 @@
             alternarSecoes(false);
         });
 
-        // Carregar a seção de registro por padrão
+        document.getElementById('btnLimparRegistros').addEventListener('click', limparRegistros);
+
+        // Iniciar a aplicação
+        initializeFirebase();
         alternarSecoes(false);
     </script>
 </body>

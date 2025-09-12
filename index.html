@@ -127,9 +127,10 @@
             <!-- Botão de Login/Logout -->
             <button id="authButton" class="bg-[#fefefc] text-[#0076c0] font-bold py-1 px-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Login Admin</button>
             <!-- Logo da KDM -->
-            <img src="KDM - LOGO2.png" alt="Logo KDM" class="w-32">
+            <!-- Usando um placeholder, já que a imagem local não está disponível na web -->
+            <img src="KDM - LOGO2.PNG" alt="Logo KDM" class="w-32">
         </div>
-
+        <p id="userIdDisplay" class="text-sm mb-2">ID de usuário: Carregando...</p>
         <!-- Seção de Login (Modal) - Inicialmente oculta -->
         <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
             <div class="bg-white text-gray-800 p-6 rounded-md shadow-lg w-full max-w-sm">
@@ -227,48 +228,20 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, getDocs, doc, updateDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Variáveis globais fornecidas pelo ambiente
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         let db, auth;
         let isAdmin = false;
         let authReady = false;
-        const LOCAL_STORAGE_KEY = 'corredoresData';
 
-        // Funções para manipulação do localStorage
-        function salvarDadosLocalmente(dados) {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dados));
-        }
-
-        function carregarDadosLocalmente() {
-            const data = localStorage.getItem(LOCAL_STORAGE_KEY);
-            return data ? JSON.parse(data) : [];
-        }
-
-        async function initializeFirebase() {
-            try {
-                const firebaseConfig = {
-  apiKey: "AIzaSyB2CQoSk7MB6qNDtwhZp_tx27HnFiqtyu4",
-  authDomain: "registros-5ddb8.firebaseapp.com",
-  projectId: "registros-5ddb8",
-  storageBucket: "registros-5ddb8.firebasestorage.app",
-  messagingSenderId: "838653309395",
-  appId: "1:838653309395:web:1dcb755bddba4376cc7f26",
-  measurementId: "G-7JC7ZNT9T7"
-}
-; catch (error) {
-                console.error("Erro ao inicializar Firebase:", error);
-            }
-        }
-        
-        const getCollectionRef = () => {
-            return collection(db, `artifacts/${appId}/public/data/corredores`);
-        };
+        // Configura o nível de log do Firebase para debug
+        setLogLevel('debug');
 
         function alternarSecoes(mostrarClassificacao) {
             document.getElementById('secaoRegistro').classList.toggle('hidden', mostrarClassificacao);
@@ -276,6 +249,9 @@
         }
 
         function parseTempo(tempoStr) {
+            if (!tempoStr || tempoStr.length !== 9) {
+                return 0;
+            }
             const horas = Number(tempoStr.substring(0, 2));
             const minutos = Number(tempoStr.substring(2, 4));
             const segundos = Number(tempoStr.substring(4, 6));
@@ -309,7 +285,7 @@
             corredores.forEach((corredor, index) => {
                 const posicao = index + 1;
                 const tempoFormatado = formatarTempo(corredor.tempoMs);
-                let destaqueClass = []; 
+                let destaqueClass = [];
                 
                 if (posicao === 1) destaqueClass = ['bg-yellow-400', 'text-black'];
                 else if (posicao === 2) destaqueClass = ['bg-gray-300', 'text-black'];
@@ -356,8 +332,11 @@
             });
         }
 
+        const getCollectionRef = () => {
+            return collection(db, `artifacts/${appId}/public/data/corredores`);
+        };
+
         function iniciarListenerBancoDeDados() {
-            // Verifica se a autenticação está pronta antes de iniciar o listener
             if (!authReady) {
                 console.warn("A autenticação do Firebase ainda não está pronta.");
                 return;
@@ -372,10 +351,7 @@
                 renderizarClassificacao(corredores);
             }, (error) => {
                 console.error("Erro ao obter dados em tempo real:", error);
-                // Se houver um erro no Firebase, tenta carregar do localStorage como fallback
-                console.log("Tentando carregar dados do localStorage...");
-                const corredoresLocal = carregarDadosLocalmente();
-                renderizarClassificacao(corredoresLocal);
+                // Se houver um erro no Firebase, não faz nada
             });
         }
         
@@ -414,7 +390,6 @@
                     try {
                         await Promise.all(deletePromises);
                         console.log("Todos os registros foram limpos com sucesso.");
-                        salvarDadosLocalmente([]); // Limpa o local storage também
                         const feedback = document.createElement('p');
                         feedback.textContent = `Todos os registros foram limpos!`;
                         feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
@@ -423,14 +398,6 @@
                     } catch (error) {
                         console.error("Erro ao limpar os registros no Firebase:", error);
                     }
-                } else {
-                    salvarDadosLocalmente([]);
-                    renderizarClassificacao([]);
-                    const feedback = document.createElement('p');
-                    feedback.textContent = `Registros locais foram limpos!`;
-                    feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
-                    document.getElementById('secaoRegistro').appendChild(feedback);
-                    setTimeout(() => feedback.remove(), 3000);
                 }
             });
 
@@ -441,14 +408,14 @@
 
         // Funções de login e logout
         document.getElementById('authButton').addEventListener('click', () => {
-             if (isAdmin) {
+            if (isAdmin) {
                 isAdmin = false;
                 document.body.classList.remove('user-logged-in');
                 document.getElementById('authButton').textContent = 'Login Admin';
                 document.getElementById('btnLimparRegistros').classList.add('hidden');
-             } else {
+            } else {
                 document.getElementById('loginModal').classList.remove('hidden');
-             }
+            }
         });
 
         document.getElementById('btnCancelarLogin').addEventListener('click', () => {
@@ -497,17 +464,6 @@
                 } catch (error) {
                     console.error("Erro ao deletar corredor no Firebase:", error);
                 }
-            } else {
-                // Caso offline, remove do localStorage
-                let corredoresLocal = carregarDadosLocalmente();
-                corredoresLocal = corredoresLocal.filter(c => c.id !== id);
-                salvarDadosLocalmente(corredoresLocal);
-                renderizarClassificacao(corredoresLocal.sort((a, b) => a.tempoMs - b.tempoMs));
-                const feedback = document.createElement('p');
-                feedback.textContent = `Corredor excluído localmente!`;
-                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-300');
-                document.getElementById('secaoClassificacao').appendChild(feedback);
-                setTimeout(() => feedback.remove(), 3000);
             }
         };
 
@@ -538,21 +494,6 @@
                     setTimeout(() => feedback.remove(), 3000);
                 } catch (error) {
                     console.error("Erro ao atualizar corredor no Firebase:", error);
-                }
-            } else {
-                // Caso offline, atualiza no localStorage
-                let corredoresLocal = carregarDadosLocalmente();
-                const index = corredoresLocal.findIndex(c => c.id === id);
-                if (index !== -1) {
-                    corredoresLocal[index] = { id, nome, tempoMs, cpf, cidade, timestamp: corredoresLocal[index].timestamp };
-                    salvarDadosLocalmente(corredoresLocal);
-                    renderizarClassificacao(corredoresLocal.sort((a, b) => a.tempoMs - b.tempoMs));
-                    document.getElementById('editModal').classList.add('hidden');
-                    const feedback = document.createElement('p');
-                    feedback.textContent = `Corredor atualizado localmente!`;
-                    feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
-                    document.getElementById('secaoClassificacao').appendChild(feedback);
-                    setTimeout(() => feedback.remove(), 3000);
                 }
             }
         });
@@ -594,17 +535,7 @@
                     console.error("Erro ao adicionar documento no Firebase:", error);
                 }
             } else {
-                // Se o Firebase não estiver pronto, salva no localStorage
-                let corredoresLocal = carregarDadosLocalmente();
-                novoCorredor.id = Date.now().toString(); // ID local simples
-                corredoresLocal.push(novoCorredor);
-                salvarDadosLocalmente(corredoresLocal);
-                renderizarClassificacao(corredoresLocal.sort((a, b) => a.tempoMs - b.tempoMs));
-                const feedback = document.createElement('p');
-                feedback.textContent = `Corredor "${nome}" adicionado localmente!`;
-                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
-                document.getElementById('secaoRegistro').appendChild(feedback);
-                setTimeout(() => feedback.remove(), 3000);
+                console.error("Firebase Auth not ready. Cannot save data.");
             }
 
             nomeInput.value = '';
@@ -623,24 +554,39 @@
 
         document.getElementById('btnLimparRegistros').addEventListener('click', limparRegistros);
 
-        // Carrega dados locais no início para exibição imediata
-        const corredoresIniciais = carregarDadosLocalmente();
-        if (corredoresIniciais.length > 0) {
-            renderizarClassificacao(corredoresIniciais.sort((a, b) => a.tempoMs - b.tempoMs));
-        }
-
-        initializeFirebase();
-        alternarSecoes(false);
-
-        // Aguarda o estado de autenticação antes de iniciar o listener
-        onAuthStateChanged(auth, (user) => {
+        // Inicializa o Firebase e a autenticação
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 authReady = true;
+                document.getElementById('userIdDisplay').textContent = `ID de usuário: ${user.uid}`;
+                console.log("Usuário autenticado:", user.uid);
                 iniciarListenerBancoDeDados();
             } else {
-                console.log("Usuário deslogado.");
+                // Tenta autenticação anônima se não houver token
+                if (initialAuthToken) {
+                    try {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                        console.log("Autenticado com token customizado.");
+                    } catch (error) {
+                        console.error("Erro ao autenticar com token customizado:", error);
+                    }
+                } else {
+                    try {
+                        await signInAnonymously(auth);
+                        console.log("Autenticado anonimamente.");
+                    } catch (error) {
+                        console.error("Erro ao autenticar anonimamente:", error);
+                    }
+                }
             }
         });
+
+        // Configuração inicial da UI
+        alternarSecoes(false);
     </script>
 </body>
 </html>

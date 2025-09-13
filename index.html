@@ -33,14 +33,16 @@
             color: var(--cor-letras);
         }
         
+        /* Estilos específicos para os itens da lista de classificação */
         .posicao-item {
             display: flex;
             align-items: center;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-radius: 0.75rem;
             transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            min-height: 80px;
         }
 
         .posicao-item:hover {
@@ -50,9 +52,9 @@
 
         .posicao-item .posicao {
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 2rem;
+            font-size: 3rem;
             font-weight: bold;
-            width: 4rem;
+            width: 6rem;
             text-align: center;
             color: var(--cor-letras);
         }
@@ -65,8 +67,9 @@
 
         .posicao-item .nome {
             flex-grow: 1;
-            margin-left: 1.5rem;
+            margin-left: 2rem;
             font-weight: 700;
+            font-size: 1.5rem;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -75,57 +78,34 @@
         .posicao-item .tempo {
             font-family: monospace;
             font-weight: 700;
-            font-size: 1.5rem;
+            font-size: 2rem;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
         }
 
         .tempo-container {
             background-color: rgba(255, 255, 255, 0.2);
-            padding: 0.5rem 1rem;
-            border-radius: 0.25rem;
-            min-width: 12rem;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            min-width: 16rem;
             text-align: right;
         }
         
+        /* Oculta os botões de edição e info extra por padrão */
         .edit-buttons, .extra-info {
             display: none;
         }
 
+        /* Exibe apenas para o usuário logado como admin */
         .user-logged-in .edit-buttons,
         .user-logged-in .extra-info {
             display: flex;
         }
         
+        /* Oculta a visualização de CPF e Cidade no modo público */
         .posicao-item:not(.user-logged-in) .extra-info {
             display: none !important;
         }
-        
-        /* Animação de scroll para a lista */
-        @keyframes scroll-up {
-            from {
-                transform: translateY(0);
-            }
-            to {
-                transform: translateY(-100%);
-            }
-        }
-        
-        .animated-list-container {
-            height: 200px; /* Altura do contêiner de scroll */
-            overflow: hidden;
-            margin-top: 1rem;
-            position: relative;
-        }
-        
-        .animated-list-wrapper {
-            animation: scroll-up linear infinite;
-            animation-duration: 30s; /* Duração da animação */
-        }
-        
-        .animated-list-container.admin-mode .animated-list-wrapper {
-            animation-play-state: paused;
-        }
-        
+
         @media (max-width: 640px) {
             .posicao-item {
                 flex-direction: column;
@@ -139,18 +119,32 @@
                 align-self: flex-end;
             }
         }
+
     </style>
 </head>
 <body class="bg-[#0076c0] text-[#fefefc]">
     
-    <div id="app" class="w-full max-w-2xl bg-black bg-opacity-10 p-6 rounded-xl shadow-lg flex flex-col items-center">
-        <!-- Login/Logout e Status -->
-        <div class="w-full flex justify-between items-center mb-4">
-            <button id="authButton" class="bg-[#fefefc] text-[#0076c0] font-bold py-1 px-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Login Admin</button>
-            <!-- Nota: Substitua 'KDM - LOGO2.PNG' por uma URL de imagem válida. -->
-            <img src="KDM - LOGO2.PNG" alt="Logo KDM" class="w-32">
+    <div id="app" class="w-full max-w-7xl bg-black bg-opacity-10 p-6 rounded-xl shadow-lg flex flex-col items-center">
+        <!-- Cabeçalho com Login/Logout, Títulos e Logo -->
+        <div class="w-full mb-0">
+            <!-- Linha superior: Logo KDM, Logo Bem Vindo centralizada e Login -->
+            <div class="grid grid-cols-3 items-center mb-2 gap-4">
+                <div class="flex justify-start">
+                    <img src="KDM - LOGO2.PNG" alt="Logo KDM" class="w-56">
+                </div>
+                <div class="flex justify-center w-full">
+                    <img src="KDM - Bem Vindo.png" alt="KDMNET" style="width: 650px !important; height: auto !important; max-width: none !important; margin-left: 30px;">
+                </div>
+                <div class="flex justify-end">
+                    <button id="authButton" class="bg-[#fefefc] text-[#0076c0] font-bold py-2 px-6 rounded-md shadow-lg transition-transform transform hover:scale-105 text-lg">Login Admin</button>
+                </div>
+            </div>
+            <!-- Títulos das seções -->
+            <div class="text-center">
+                <h1 id="tituloSecao" class="text-6xl font-bold">Registro de Corredores</h1>
+            </div>
         </div>
-
+        <p id="userIdDisplay" class="text-sm mb-2 hidden">ID de usuário: Carregando...</p>
         <!-- Seção de Login (Modal) - Inicialmente oculta -->
         <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
             <div class="bg-white text-gray-800 p-6 rounded-md shadow-lg w-full max-w-sm">
@@ -175,57 +169,49 @@
         <div id="mainAppContent" class="w-full">
             <!-- Seção de Registro -->
             <div id="secaoRegistro" class="w-full">
-                <h1 class="text-4xl text-center mb-6">Registro de Corredores</h1>
-                <form id="formularioRegistro" class="space-y-4">
+                <form id="formularioRegistro" class="space-y-6">
                     <div>
-                        <label for="nome" class="block mb-1 text-lg">Nome do Corredor</label>
-                        <input type="text" id="nome" required class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
+                        <label for="nome" class="block mb-2 text-2xl font-bold">Nome do Corredor</label>
+                        <input type="text" id="nome" required class="w-full p-4 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0] text-xl">
                     </div>
                     <div>
-                        <label for="tempo" class="block mb-1 text-lg">Tempo (mm:ss:ms)</label>
-                        <input type="text" id="tempo" required placeholder="Ex: 05:30:123" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
-                        <p class="text-sm mt-1 text-[#fefefc]">O formato será preenchido automaticamente.</p>
+                        <label for="tempo" class="block mb-2 text-2xl font-bold">Tempo (mm:ss:ms)</label>
+                        <input type="text" id="tempo" required maxlength="9" placeholder="Ex: 0130500" class="w-full p-4 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0] text-xl">
+                        <p class="text-lg mt-2 text-[#fefefc]">Digite apenas os números: mmssms (ex: 0130500).</p>
                     </div>
                     
-                    <div id="adminFields" class="space-y-4">
+                    <!-- Campos que aparecem com o login de admin -->
+                    <div id="adminFields" class="space-y-6">
                         <div>
-                            <label for="celular" class="block mb-1 text-lg">Telefone Celular</label>
-                            <input type="tel" id="celular" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
+                            <label for="cpf" class="block mb-2 text-2xl font-bold">CPF</label>
+                            <input type="text" id="cpf" maxlength="14" placeholder="Ex: 123.456.789-01" class="w-full p-4 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0] text-xl">
                         </div>
                         <div>
-                            <label for="cpf" class="block mb-1 text-lg">CPF</label>
-                            <input type="text" id="cpf" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
+                            <label for="telefone" class="block mb-2 text-2xl font-bold">Telefone</label>
+                            <input type="text" id="telefone" maxlength="15" placeholder="Ex: (45) 99999-9999" class="w-full p-4 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0] text-xl">
                         </div>
                         <div>
-                            <label for="cidade" class="block mb-1 text-lg">Cidade</label>
-                            <input type="text" id="cidade" class="w-full p-3 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0]">
+                            <label for="cidade" class="block mb-2 text-2xl font-bold">Cidade</label>
+                            <input type="text" id="cidade" class="w-full p-4 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0] text-xl">
                         </div>
                     </div>
 
-                    <button type="submit" id="submitButton" class="w-full bg-[#fefefc] text-[#0076c0] font-bold py-3 rounded-md shadow-lg transition-transform transform hover:scale-105">Adicionar Corredor</button>
+                    <button type="submit" class="w-full bg-[#fefefc] text-[#0076c0] font-bold py-4 rounded-md shadow-lg transition-transform transform hover:scale-105 text-xl">Adicionar Corredor</button>
                 </form>
-                <button id="btnVerClassificacao" class="w-full mt-4 bg-transparent border-2 border-[#fefefc] text-[#fefefc] font-bold py-3 rounded-md transition-transform transform hover:scale-105">Ver Classificação</button>
-                <button id="btnLimparRegistros" class="w-full mt-4 bg-transparent border-2 border-red-500 text-red-500 font-bold py-3 rounded-md transition-transform transform hover:scale-105 hidden">Limpar Todos os Registros</button>
+                <button id="btnVerClassificacao" class="w-full mt-6 bg-transparent border-2 border-[#fefefc] text-[#fefefc] font-bold py-4 rounded-md transition-transform transform hover:scale-105 text-xl">Ver Classificação</button>
+                <button id="btnExportarDados" class="w-full mt-6 bg-transparent border-2 border-green-500 text-green-500 font-bold py-4 rounded-md transition-transform transform hover:scale-105 text-xl hidden">Exportar Dados (CSV)</button>
+                <button id="btnLimparRegistros" class="w-full mt-6 bg-transparent border-2 border-red-500 text-red-500 font-bold py-4 rounded-md transition-transform transform hover:scale-105 text-xl hidden">Limpar Todos os Registros</button>
             </div>
 
             <!-- Seção de Classificação -->
             <div id="secaoClassificacao" class="w-full hidden">
-                <h1 class="text-4xl text-center mb-6">Classificação da Corrida</h1>
-                <!-- Top 3 Estático -->
-                <div id="top3Classificacao" class="w-full space-y-3"></div>
-                <!-- Lista animada a partir do 4º colocado -->
-                <div id="animated-list-container" class="animated-list-container">
-                    <div id="scrollingList" class="animated-list-wrapper space-y-3">
-                        <!-- Itens da lista serão inseridos aqui pelo JS -->
-                    </div>
+                <div id="listaClassificacao" class="w-full space-y-4">
+                    <!-- A lista de corredores será renderizada aqui pelo JavaScript -->
                 </div>
-                <button id="btnVoltarRegistro" class="w-full mt-6 bg-transparent border-2 border-[#fefefc] text-[#fefefc] font-bold py-3 rounded-md transition-transform transform hover:scale-105">Voltar para o Registro</button>
+                <button id="btnVoltarRegistro" class="w-full mt-8 bg-transparent border-2 border-[#fefefc] text-[#fefefc] font-bold py-4 rounded-md transition-transform transform hover:scale-105 text-xl">Voltar para o Registro</button>
             </div>
         </div>
     </div>
-    
-    <!-- ID do Usuário - Mover para o canto inferior esquerdo -->
-    <p id="userIdDisplay" class="fixed bottom-2 left-2 text-xs opacity-75 z-50">Carregando...</p>
 
     <!-- Modal de Edição -->
     <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
@@ -239,15 +225,15 @@
                 </div>
                 <div>
                     <label for="editTempo" class="block mb-1">Tempo (mm:ss:ms)</label>
-                    <input type="text" id="editTempo" required class="w-full p-2 rounded-md bg-gray-200">
-                </div>
-                <div>
-                    <label for="editCelular" class="block mb-1">Telefone Celular</label>
-                    <input type="tel" id="editCelular" class="w-full p-2 rounded-md bg-gray-200">
+                    <input type="text" id="editTempo" required maxlength="9" class="w-full p-2 rounded-md bg-gray-200">
                 </div>
                 <div>
                     <label for="editCpf" class="block mb-1">CPF</label>
-                    <input type="text" id="editCpf" class="w-full p-2 rounded-md bg-gray-200">
+                    <input type="text" id="editCpf" maxlength="14" class="w-full p-2 rounded-md bg-gray-200">
+                </div>
+                <div>
+                    <label for="editTelefone" class="block mb-1">Telefone</label>
+                    <input type="text" id="editTelefone" maxlength="15" class="w-full p-2 rounded-md bg-gray-200">
                 </div>
                 <div>
                     <label for="editCidade" class="block mb-1">Cidade</label>
@@ -262,138 +248,95 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, getDocs, doc, updateDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, getDocs, doc, updateDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
+        // Configuração do Firebase - Projeto dashboard-corrida-kdm
         const firebaseConfig = {
-            apiKey: "AIzaSyB2CQoSk7MB6qNDtwhZp_tx27HnFiqtyu4",
-            authDomain: "registros-5ddb8.firebaseapp.com",
-            projectId: "registros-5ddb8",
-            storageBucket: "registros-5ddb8.firebase-app.com",
-            messagingSenderId: "838653309395",
-            appId: "1:838653309395:web:1dcb755bddba4376cc7f26",
-            measurementId: "G-7JC7ZNT9T7"
+            apiKey: "AIzaSyB2vluI975aGAGP9AyEPDIIbVQ-U5KFsuw",
+            authDomain: "dashboard-corrida-kdm.firebaseapp.com",
+            projectId: "dashboard-corrida-kdm",
+            storageBucket: "dashboard-corrida-kdm.firebasestorage.app",
+            messagingSenderId: "207183988835",
+            appId: "1:207183988835:web:5369709d78839805651056",
+            measurementId: "G-5E41YX6JK4"
         };
+        
+        const appId = 'dashboard-corrida-kdm'; // ID único para sua aplicação
+        const initialAuthToken = null; // Não precisa de token customizado
 
         let db, auth;
         let isAdmin = false;
         let authReady = false;
 
+        // Configura o nível de log do Firebase para debug
         setLogLevel('debug');
-
-        const userIdDisplay = document.getElementById('userIdDisplay');
-        const submitButton = document.getElementById('submitButton');
-        const formularioRegistro = document.getElementById('formularioRegistro');
-        const animatedListContainer = document.getElementById('animated-list-container');
 
         function alternarSecoes(mostrarClassificacao) {
             document.getElementById('secaoRegistro').classList.toggle('hidden', mostrarClassificacao);
             document.getElementById('secaoClassificacao').classList.toggle('hidden', !mostrarClassificacao);
+            
+            // Atualiza o título
+            const titulo = document.getElementById('tituloSecao');
+            if (mostrarClassificacao) {
+                titulo.textContent = 'Classificação da Corrida';
+            } else {
+                titulo.textContent = 'Registro de Corredores';
+            }
         }
 
         function parseTempo(tempoStr) {
             if (!tempoStr) return 0;
-            const apenasDigitos = tempoStr.replace(/\D/g, '');
-            const minutos = Number(apenasDigitos.substring(0, 2));
-            const segundos = Number(apenasDigitos.substring(2, 4));
-            const milissegundos = Number(apenasDigitos.substring(4, 7));
+            
+            // Remove dois pontos se existirem (para compatibilidade)
+            const tempoLimpo = tempoStr.replace(/:/g, '');
+            
+            if (tempoLimpo.length !== 7) return 0;
+            
+            const minutos = Number(tempoLimpo.substring(0, 2));
+            const segundos = Number(tempoLimpo.substring(2, 4));
+            const milissegundos = Number(tempoLimpo.substring(4, 7));
+            
             return minutos * 60000 + segundos * 1000 + milissegundos;
         }
 
         function formatarTempo(tempoMs) {
-            const minutos = Math.floor(tempoMs / 60000);
-            const segundos = Math.floor((tempoMs % 60000) / 1000);
-            const milissegundos = tempoMs % 1000;
+            const ms = tempoMs % 1000;
+            const segundosTotal = Math.floor(tempoMs / 1000);
+            const segundos = segundosTotal % 60;
+            const minutos = Math.floor(segundosTotal / 60);
 
             const pad = num => num.toString().padStart(2, '0');
             const padMs = num => num.toString().padStart(3, '0');
 
-            return `${pad(minutos)}:${pad(segundos)}:${padMs(milissegundos)}`;
+            return `${pad(minutos)}:${pad(segundos)}:${padMs(ms)}`;
         }
-        
-        document.getElementById('tempo').addEventListener('input', (e) => {
-            let input = e.target.value.replace(/\D/g, '');
-            let formattedInput = '';
-
-            if (input.length > 0) {
-                formattedInput += input.substring(0, 2);
-            }
-            if (input.length > 2) {
-                formattedInput += ':' + input.substring(2, 4);
-            }
-            if (input.length > 4) {
-                formattedInput += ':' + input.substring(4, 7);
-            }
-
-            e.target.value = formattedInput;
-        });
-
-        document.getElementById('cpf').addEventListener('input', (e) => {
-            let input = e.target.value.replace(/\D/g, '');
-            let formattedCpf = '';
-            
-            if (input.length > 0) {
-                formattedCpf += input.substring(0, 3);
-            }
-            if (input.length > 3) {
-                formattedCpf += '.' + input.substring(3, 6);
-            }
-            if (input.length > 6) {
-                formattedCpf += '.' + input.substring(6, 9);
-            }
-            if (input.length > 9) {
-                formattedCpf += '-' + input.substring(9, 11);
-            }
-            
-            e.target.value = formattedCpf;
-        });
-
-        document.getElementById('nome').addEventListener('input', (e) => {
-            let input = e.target.value;
-            e.target.value = input.split(' ').map(word => {
-                if (word.length === 0) return '';
-                return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-            }).join(' ');
-        });
 
         function renderizarClassificacao(corredores) {
-            const top3Classificacao = document.getElementById('top3Classificacao');
-            const scrollingList = document.getElementById('scrollingList');
-            top3Classificacao.innerHTML = '';
-            scrollingList.innerHTML = '';
+            const listaClassificacao = document.getElementById('listaClassificacao');
+            listaClassificacao.innerHTML = '';
 
             if (corredores.length === 0) {
-                top3Classificacao.innerHTML = '<p class="text-center italic">Nenhum corredor registrado ainda.</p>';
-                animatedListContainer.classList.add('admin-mode');
+                listaClassificacao.innerHTML = '<p class="text-center italic">Nenhum corredor registrado ainda.</p>';
                 return;
             }
-            
-            // Pausa a animação se for admin
-            if (isAdmin) {
-                animatedListContainer.classList.add('admin-mode');
-            } else {
-                animatedListContainer.classList.remove('admin-mode');
-            }
 
-            corredores.forEach((corredor, index) => {
+            // Limita a 50 corredores máximo
+            const corredoresLimitados = corredores.slice(0, 50);
+
+            corredoresLimitados.forEach((corredor, index) => {
                 const posicao = index + 1;
                 const tempoFormatado = formatarTempo(corredor.tempoMs);
                 let destaqueClass = [];
                 
+                // Top 3 fixos
                 if (posicao === 1) destaqueClass = ['bg-yellow-400', 'text-black'];
                 else if (posicao === 2) destaqueClass = ['bg-gray-300', 'text-black'];
                 else if (posicao === 3) destaqueClass = ['bg-yellow-800', 'text-white'];
                 
                 const itemDiv = document.createElement('div');
                 itemDiv.classList.add('posicao-item', ...destaqueClass);
-                
-                if (isAdmin) {
-                    itemDiv.classList.add('user-logged-in');
-                }
 
                 const nomeElement = document.createElement('span');
                 nomeElement.classList.add('nome');
@@ -406,17 +349,23 @@
                 const extraInfoDiv = document.createElement('div');
                 extraInfoDiv.classList.add('extra-info', 'mt-2', 'text-sm', 'text-gray-600', 'flex-1', 'flex-col');
                 extraInfoDiv.innerHTML = `
-                    <p>Celular: ${corredor.celular || 'N/A'}</p>
                     <p>CPF: ${corredor.cpf || 'N/A'}</p>
+                    <p>Telefone: ${corredor.telefone || 'N/A'}</p>
                     <p>Cidade: ${corredor.cidade || 'N/A'}</p>
                 `;
 
                 const editButtonsDiv = document.createElement('div');
                 editButtonsDiv.classList.add('edit-buttons', 'flex', 'ml-4', 'space-x-2');
+                
+                // Só mostra botões de editar/excluir se for admin
+                if (isAdmin) {
                 editButtonsDiv.innerHTML = `
-                    <button class="bg-blue-500 text-white px-2 py-1 rounded" onclick="abrirModalEdicao('${corredor.id}', '${corredor.nome}', '${corredor.tempoMs}', '${corredor.celular || ''}', '${corredor.cpf || ''}', '${corredor.cidade || ''}')">Editar</button>
+                        <button class="bg-blue-500 text-white px-2 py-1 rounded" onclick="abrirModalEdicao('${corredor.id}', '${corredor.nome}', '${corredor.tempoMs}', '${corredor.cpf || ''}', '${corredor.telefone || ''}', '${corredor.cidade || ''}')">Editar</button>
                     <button class="bg-red-500 text-white px-2 py-1 rounded" onclick="deletarCorredor('${corredor.id}')">Excluir</button>
                 `;
+                } else {
+                    editButtonsDiv.innerHTML = ''; // Vazio para usuários não-admin
+                }
                 
                 itemDiv.appendChild(document.createElement('span')).classList.add('posicao');
                 itemDiv.querySelector('.posicao').textContent = `${posicao}º`;
@@ -430,11 +379,7 @@
                 itemDiv.appendChild(tempoContainer);
                 itemDiv.appendChild(editButtonsDiv);
                 
-                if (posicao <= 3) {
-                    top3Classificacao.appendChild(itemDiv);
-                } else {
-                    scrollingList.appendChild(itemDiv);
-                }
+                listaClassificacao.appendChild(itemDiv);
             });
         }
 
@@ -454,9 +399,11 @@
                     corredores.push({ ...doc.data(), id: doc.id });
                 });
                 corredores.sort((a, b) => a.tempoMs - b.tempoMs);
+                corredoresExistentes = corredores; // Atualiza lista para verificação de duplicatas
                 renderizarClassificacao(corredores);
             }, (error) => {
                 console.error("Erro ao obter dados em tempo real:", error);
+                // Se houver um erro no Firebase, não faz nada
             });
         }
         
@@ -511,12 +458,19 @@
             });
         }
 
+        // Funções de login e logout
         document.getElementById('authButton').addEventListener('click', () => {
             if (isAdmin) {
                 isAdmin = false;
                 document.body.classList.remove('user-logged-in');
                 document.getElementById('authButton').textContent = 'Login Admin';
                 document.getElementById('btnLimparRegistros').classList.add('hidden');
+                document.getElementById('btnExportarDados').classList.add('hidden');
+                
+                // Re-renderiza a classificação para esconder botões de admin
+                if (corredoresExistentes.length > 0) {
+                    renderizarClassificacao(corredoresExistentes);
+                }
             } else {
                 document.getElementById('loginModal').classList.remove('hidden');
             }
@@ -526,45 +480,45 @@
             document.getElementById('loginModal').classList.add('hidden');
         });
 
-        async function forceRenderClassificacao() {
-             const q = query(getCollectionRef());
-             const snapshot = await getDocs(q); // Obtém uma cópia dos dados
-             const corredores = [];
-             snapshot.forEach((doc) => {
-                 corredores.push({ ...doc.data(), id: doc.id });
-             });
-             corredores.sort((a, b) => a.tempoMs - b.tempoMs);
-             renderizarClassificacao(corredores);
-         }
-
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('loginUsername').value;
             const password = document.getElementById('loginPassword').value;
             const feedback = document.getElementById('loginFeedback');
 
-            if (username === 'admin' && password === '142536789') {
+            if (username === 'claudemar' && password === '142536789') {
                 isAdmin = true;
                 document.body.classList.add('user-logged-in');
                 document.getElementById('loginModal').classList.add('hidden');
                 document.getElementById('authButton').textContent = 'Logout';
                 document.getElementById('btnLimparRegistros').classList.remove('hidden');
+                document.getElementById('btnExportarDados').classList.remove('hidden');
                 feedback.classList.add('hidden');
-                // Força uma nova renderização da classificação para aplicar a pausa na animação
-                forceRenderClassificacao();
+                
+                // Re-renderiza a classificação para mostrar botões de admin
+                if (corredoresExistentes.length > 0) {
+                    renderizarClassificacao(corredoresExistentes);
+                }
+                
+                // Mostrar feedback de sucesso
+                const successFeedback = document.createElement('p');
+                successFeedback.textContent = `Bem-vindo, ${username}!`;
+                successFeedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
+                document.getElementById('secaoRegistro').appendChild(successFeedback);
+                setTimeout(() => successFeedback.remove(), 3000);
             } else {
                 feedback.classList.remove('hidden');
             }
         });
 
-        window.abrirModalEdicao = (id, nome, tempoMs, celular, cpf, cidade) => {
+        // Funções de edição e exclusão
+        window.abrirModalEdicao = (id, nome, tempoMs, cpf, telefone, cidade) => {
             if (!isAdmin) return;
             document.getElementById('editId').value = id;
             document.getElementById('editNome').value = nome;
-            const tempoFormatado = formatarTempo(Number(tempoMs));
-            document.getElementById('editTempo').value = tempoFormatado;
-            document.getElementById('editCelular').value = celular;
+            document.getElementById('editTempo').value = formatarTempo(tempoMs);
             document.getElementById('editCpf').value = cpf;
+            document.getElementById('editTelefone').value = telefone;
             document.getElementById('editCidade').value = cidade;
             document.getElementById('editModal').classList.remove('hidden');
         };
@@ -592,8 +546,8 @@
             const id = document.getElementById('editId').value;
             const nome = document.getElementById('editNome').value;
             const tempoStr = document.getElementById('editTempo').value;
-            const celular = document.getElementById('editCelular').value;
             const cpf = document.getElementById('editCpf').value;
+            const telefone = document.getElementById('editTelefone').value;
             const cidade = document.getElementById('editCidade').value;
             const tempoMs = parseTempo(tempoStr);
 
@@ -602,8 +556,8 @@
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/corredores`, id), {
                         nome: nome,
                         tempoMs: tempoMs,
-                        celular: celular,
                         cpf: cpf,
+                        telefone: telefone,
                         cidade: cidade
                     });
                     document.getElementById('editModal').classList.add('hidden');
@@ -622,55 +576,175 @@
             document.getElementById('editModal').classList.add('hidden');
         });
 
-        formularioRegistro.addEventListener('submit', async (e) => {
+        // Variáveis para controle de spam
+        let isSubmitting = false;
+        let corredoresExistentes = [];
+
+        // Função para verificar duplicatas
+        function verificarDuplicatas(nome, cpf, telefone) {
+            const cpfLimpo = cpf ? cpf.replace(/\D/g, '') : '';
+            const telefoneLimpo = telefone ? telefone.replace(/\D/g, '') : '';
+            
+            return corredoresExistentes.some(corredor => 
+                corredor.nome.toLowerCase() === nome.toLowerCase() ||
+                (cpfLimpo && corredor.cpf && corredor.cpf.replace(/\D/g, '') === cpfLimpo) ||
+                (telefoneLimpo && corredor.telefone && corredor.telefone.replace(/\D/g, '') === telefoneLimpo)
+            );
+        }
+
+        // Lógica dos eventos
+        document.getElementById('formularioRegistro').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!authReady) {
-                const feedback = document.createElement('p');
-                feedback.textContent = `O aplicativo está carregando. Tente novamente em instantes.`;
-                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-500');
-                document.getElementById('secaoRegistro').appendChild(feedback);
-                setTimeout(() => feedback.remove(), 3000);
+            
+            // Previne spam
+            if (isSubmitting) {
                 return;
             }
-            
+            isSubmitting = true;
+
             const nomeInput = document.getElementById('nome');
             const tempoInput = document.getElementById('tempo');
-            const celularInput = document.getElementById('celular');
             const cpfInput = document.getElementById('cpf');
+            const telefoneInput = document.getElementById('telefone');
             const cidadeInput = document.getElementById('cidade');
 
-            const nome = nomeInput.value;
+            const nome = nomeInput.value.trim();
             const tempoStr = tempoInput.value;
-            const celular = celularInput.value;
             const cpf = cpfInput.value;
+            const telefone = telefoneInput.value;
             const cidade = cidadeInput.value;
             const tempoMs = parseTempo(tempoStr);
+
+            // Validações
+            if (!nome) {
+                mostrarErro('Nome é obrigatório!');
+                isSubmitting = false;
+                return;
+            }
+
+            if (!tempoStr || tempoMs === 0) {
+                mostrarErro('Tempo inválido! Digite 7 dígitos (ex: 0130500)');
+                isSubmitting = false;
+                return;
+            }
+
+            // Remove formatação para validação
+            const cpfLimpo = cpf.replace(/\D/g, '');
+            const telefoneLimpo = telefone.replace(/\D/g, '');
+
+            if (cpf && cpfLimpo.length !== 11) {
+                mostrarErro('CPF deve ter exatamente 11 dígitos!');
+                isSubmitting = false;
+                return;
+            }
+
+            if (telefone && telefoneLimpo.length !== 11) {
+                mostrarErro('Telefone deve ter exatamente 11 dígitos!');
+                isSubmitting = false;
+                return;
+            }
+
+            // Verificar duplicatas
+            if (verificarDuplicatas(nome, cpf, telefone)) {
+                mostrarErro('Já existe um corredor com este nome, CPF ou telefone!');
+                isSubmitting = false;
+                return;
+            }
+
             const novoCorredor = {
                 nome: nome,
                 tempoMs: tempoMs,
-                celular: celular,
                 cpf: cpf,
+                telefone: telefone,
                 cidade: cidade,
                 timestamp: new Date().toISOString()
             };
 
-            try {
-                await addDoc(getCollectionRef(), novoCorredor);
-                const feedback = document.createElement('p');
-                feedback.textContent = `Corredor "${nome}" adicionado!`;
-                feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
-                document.getElementById('secaoRegistro').appendChild(feedback);
-                setTimeout(() => feedback.remove(), 3000);
-            } catch (error) {
-                console.error("Erro ao adicionar documento no Firebase:", error);
+            if (authReady) {
+                try {
+                    await addDoc(getCollectionRef(), novoCorredor);
+                    const feedback = document.createElement('p');
+                    feedback.textContent = `Corredor "${nome}" adicionado!`;
+                    feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
+                    document.getElementById('secaoRegistro').appendChild(feedback);
+                    setTimeout(() => feedback.remove(), 3000);
+                    
+                    // Limpar formulário
+                    nomeInput.value = '';
+                    tempoInput.value = '';
+                    cpfInput.value = '';
+                    telefoneInput.value = '';
+                    cidadeInput.value = '';
+                } catch (error) {
+                    console.error("Erro ao adicionar documento no Firebase:", error);
+                    mostrarErro('Erro ao salvar corredor!');
+                }
+            } else {
+                console.error("Firebase Auth not ready. Cannot save data.");
+                mostrarErro('Sistema não está pronto. Tente novamente.');
             }
 
-            nomeInput.value = '';
-            tempoInput.value = '';
-            celularInput.value = '';
-            cpfInput.value = '';
-            cidadeInput.value = '';
+            isSubmitting = false;
         });
+
+        function mostrarErro(mensagem) {
+            const feedback = document.createElement('p');
+            feedback.textContent = mensagem;
+            feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-red-500');
+            document.getElementById('secaoRegistro').appendChild(feedback);
+            setTimeout(() => feedback.remove(), 3000);
+        }
+
+        // Função para exportar dados para CSV
+        function exportarDados() {
+            if (!isAdmin) {
+                mostrarErro('Apenas administradores podem exportar dados!');
+                return;
+            }
+
+            const dados = corredoresExistentes.map((corredor, index) => ({
+                Posicao: index + 1,
+                Nome: corredor.nome,
+                Tempo: formatarTempo(corredor.tempoMs),
+                CPF: corredor.cpf || '',
+                Telefone: corredor.telefone || '',
+                Cidade: corredor.cidade || '',
+                Data: new Date(corredor.timestamp).toLocaleString('pt-BR')
+            }));
+
+            // Converte para CSV
+            const headers = ['Posição', 'Nome', 'Tempo', 'CPF', 'Telefone', 'Cidade', 'Data'];
+            const csvContent = [
+                headers.join(','),
+                ...dados.map(row => [
+                    row.Posicao,
+                    `"${row.Nome}"`,
+                    `"${row.Tempo}"`,
+                    `"${row.CPF}"`,
+                    `"${row.Telefone}"`,
+                    `"${row.Cidade}"`,
+                    `"${row.Data}"`
+                ].join(','))
+            ].join('\n');
+
+            // Download do arquivo
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `corredores_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Feedback de sucesso
+            const feedback = document.createElement('p');
+            feedback.textContent = `Dados exportados com sucesso! ${dados.length} corredores.`;
+            feedback.classList.add('text-center', 'mt-4', 'font-bold', 'text-green-300');
+            document.getElementById('secaoRegistro').appendChild(feedback);
+            setTimeout(() => feedback.remove(), 3000);
+        }
 
         document.getElementById('btnVerClassificacao').addEventListener('click', () => {
             alternarSecoes(true);
@@ -681,31 +755,122 @@
         });
 
         document.getElementById('btnLimparRegistros').addEventListener('click', limparRegistros);
+        document.getElementById('btnExportarDados').addEventListener('click', exportarDados);
 
+        // Inicializa o Firebase e a autenticação
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
         db = getFirestore(app);
         auth = getAuth(app);
         
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
+        // Inicializa sem autenticação para simplificar
+        try {
                 authReady = true;
-                userIdDisplay.textContent = `ID de usuário: ${user.uid}`;
-                submitButton.disabled = false;
+            document.getElementById('userIdDisplay').textContent = `ID de usuário: Anônimo`;
+            console.log("Firebase inicializado sem autenticação");
                 iniciarListenerBancoDeDados();
-                console.log("Usuário autenticado:", user.uid);
-            } else {
-                try {
-                    await signInAnonymously(auth);
-                    console.log("Autenticado anonimamente.");
-                } catch (error) {
-                    console.error("Erro ao autenticar anonimamente:", error);
+                    } catch (error) {
+            console.error("Erro ao inicializar Firebase:", error);
+        }
+
+        // Máscara de tempo automática
+        function aplicarMascaraTempo(input) {
+            input.addEventListener('input', function(e) {
+                let valor = e.target.value.replace(/\D/g, ''); // Remove tudo que não é dígito
+                
+                // Aplica máscara: mm:ss:ms (7 dígitos + 2 dois pontos = 9 caracteres)
+                if (valor.length >= 2) {
+                    valor = valor.substring(0, 2) + ':' + valor.substring(2);
                 }
-            }
+                if (valor.length >= 5) {
+                    valor = valor.substring(0, 5) + ':' + valor.substring(5);
+                }
+                // Limita a 7 dígitos (mm:ss:ms = 9 caracteres totais)
+                if (valor.length > 9) {
+                    valor = valor.substring(0, 9);
+                }
+                
+                e.target.value = valor;
+            });
+        }
+
+        // Máscara de CPF automática
+        function aplicarMascaraCPF(input) {
+            input.addEventListener('input', function(e) {
+                let valor = e.target.value.replace(/\D/g, ''); // Remove tudo que não é dígito
+                
+                // Aplica máscara: 000.000.000-00
+                if (valor.length >= 4) {
+                    valor = valor.substring(0, 3) + '.' + valor.substring(3);
+                }
+                if (valor.length >= 8) {
+                    valor = valor.substring(0, 7) + '.' + valor.substring(7);
+                }
+                if (valor.length >= 12) {
+                    valor = valor.substring(0, 11) + '-' + valor.substring(11);
+                }
+                // Limita a 11 dígitos (CPF = 14 caracteres totais)
+                if (valor.length > 14) {
+                    valor = valor.substring(0, 14);
+                }
+                
+                e.target.value = valor;
+            });
+        }
+
+        // Máscara de telefone automática
+        function aplicarMascaraTelefone(input) {
+            input.addEventListener('input', function(e) {
+                let valor = e.target.value.replace(/\D/g, ''); // Remove tudo que não é dígito
+                
+                // Aplica máscara: (00) 00000-0000
+                if (valor.length >= 1) {
+                    valor = '(' + valor.substring(0, 2) + ') ' + valor.substring(2);
+                }
+                if (valor.length >= 10) {
+                    valor = valor.substring(0, 10) + '-' + valor.substring(10);
+                }
+                // Limita a 11 dígitos (telefone = 15 caracteres totais)
+                if (valor.length > 15) {
+                    valor = valor.substring(0, 15);
+                }
+                
+                e.target.value = valor;
+            });
+        }
+
+        // Capitalizar primeira letra de cada palavra
+        function capitalizarTexto(input) {
+            input.addEventListener('input', function(e) {
+                let valor = e.target.value;
+                valor = valor.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+                e.target.value = valor;
+            });
+        }
+
+        // Aplicar máscaras nos campos
+        document.addEventListener('DOMContentLoaded', function() {
+            // Máscaras de tempo
+            aplicarMascaraTempo(document.getElementById('tempo'));
+            aplicarMascaraTempo(document.getElementById('editTempo'));
+            
+            // Máscaras de CPF
+            aplicarMascaraCPF(document.getElementById('cpf'));
+            aplicarMascaraCPF(document.getElementById('editCpf'));
+            
+            // Máscaras de telefone
+            aplicarMascaraTelefone(document.getElementById('telefone'));
+            aplicarMascaraTelefone(document.getElementById('editTelefone'));
+            
+            // Capitalização de texto
+            capitalizarTexto(document.getElementById('nome'));
+            capitalizarTexto(document.getElementById('cidade'));
+            capitalizarTexto(document.getElementById('editNome'));
+            capitalizarTexto(document.getElementById('editCidade'));
         });
 
+
+        // Configuração inicial da UI
         alternarSecoes(false);
-        submitButton.disabled = true;
     </script>
 </body>
 </html>

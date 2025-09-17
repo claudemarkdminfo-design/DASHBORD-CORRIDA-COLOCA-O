@@ -142,6 +142,7 @@
             <!-- Títulos das seções -->
             <div class="text-center">
                 <h1 id="tituloSecao" class="text-6xl font-bold">Registro de Corredores</h1>
+                <p class="text-lg mt-2 text-[#fefefc]">Os campos são formatados automaticamente (tempo, CPF e telefone).</p>
             </div>
         </div>
         <p id="userIdDisplay" class="text-sm mb-2 hidden">ID de usuário: Carregando...</p>
@@ -177,7 +178,6 @@
                     <div>
                         <label for="tempo" class="block mb-2 text-2xl font-bold">Tempo (mm:ss:ms)</label>
                         <input type="text" id="tempo" required maxlength="9" placeholder="Ex: 0130500" class="w-full p-4 rounded-md bg-[#fefefc] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0076c0] text-xl">
-                        <p class="text-lg mt-2 text-[#fefefc]">Digite apenas os números: mmssms (ex: 0130500).</p>
                     </div>
                     
                     <!-- Campos que aparecem com o login de admin -->
@@ -199,6 +199,7 @@
                     <button type="submit" class="w-full bg-[#fefefc] text-[#0076c0] font-bold py-4 rounded-md shadow-lg transition-transform transform hover:scale-105 text-xl">Adicionar Corredor</button>
                 </form>
                 <button id="btnVerClassificacao" class="w-full mt-6 bg-transparent border-2 border-[#fefefc] text-[#fefefc] font-bold py-4 rounded-md transition-transform transform hover:scale-105 text-xl">Ver Classificação</button>
+                <a href="classificacao.html" class="w-full mt-4 bg-transparent border-2 border-blue-300 text-blue-300 font-bold py-4 rounded-md transition-transform transform hover:scale-105 text-xl block text-center">Tela Alternativa de Classificação</a>
                 <button id="btnExportarDados" class="w-full mt-6 bg-transparent border-2 border-green-500 text-green-500 font-bold py-4 rounded-md transition-transform transform hover:scale-105 text-xl hidden">Exportar Dados (CSV)</button>
                 <button id="btnLimparRegistros" class="w-full mt-6 bg-transparent border-2 border-red-500 text-red-500 font-bold py-4 rounded-md transition-transform transform hover:scale-105 text-xl hidden">Limpar Todos os Registros</button>
             </div>

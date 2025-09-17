@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classificação da Corrida - KDM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Libre+Franklin:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --cor-fundo: #0076c0;
+            --cor-letras: #fefefc;
+            --cor-destaque-1: #FFD700; /* Ouro */
+            --cor-destaque-2: #C0C0C0; /* Prata */
+            --cor-destaque-3: #CD7F32; /* Bronze */
+            --cor-azul-claro: #87CEEB; /* Azul claro para destaque */
+            --cor-azul-medio: #4682B4; /* Azul médio */
+        }
+
+        body {
+            font-family: 'Libre Franklin', sans-serif;
+            background: linear-gradient(135deg, #0076c0 0%, #005a9e 100%);
+            color: var(--cor-letras);
+            min-height: 100vh;
+            padding: 1rem;
+            position: relative;
+        }
+
+        /* Imagem de fundo translúcida */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('KDM-F1.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.3;
+            z-index: -1;
+        }
+
+        h1, h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            color: var(--cor-letras);
+        }
+        
+        /* Estilos específicos para os itens da lista de classificação */
+        .posicao-item {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem;
+            margin-bottom: 0.6rem;
+            border-radius: 0.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            min-height: 50px;
+            background: linear-gradient(135deg, var(--cor-azul-claro) 0%, var(--cor-azul-medio) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .posicao-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .posicao-item .posicao {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem;
+            font-weight: bold;
+            width: 3rem;
+            text-align: center;
+            color: #1a365d;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
+        }
+        
+        .posicao-item.bg-yellow-400 .posicao,
+        .posicao-item.bg-gray-300 .posicao,
+        .posicao-item.bg-yellow-800 .posicao {
+            color: #111;
+        }
+
+        .posicao-item .nome {
+            flex-grow: 1;
+            margin-left: 1rem;
+            font-weight: 700;
+            font-size: 1rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #1a365d;
+        }
+
+        .posicao-item .tempo {
+            font-family: monospace;
+            font-weight: 700;
+            font-size: 1.2rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            color: #1a365d;
+        }
+
+        .tempo-container {
+            background-color: rgba(255, 255, 255, 0.4);
+            padding: 0.5rem 1rem;
+            border-radius: 0.3rem;
+            min-width: 8rem;
+            text-align: right;
+        }
+
+        /* Top 3 com cores especiais */
+        .posicao-item.primeiro {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            border: 2px solid #FF8C00;
+        }
+
+        .posicao-item.segundo {
+            background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%);
+            border: 2px solid #808080;
+        }
+
+        .posicao-item.terceiro {
+            background: linear-gradient(135deg, #CD7F32 0%, #B8860B 100%);
+            border: 2px solid #8B4513;
+        }
+
+        .posicao-item.primeiro .posicao,
+        .posicao-item.primeiro .nome,
+        .posicao-item.primeiro .tempo {
+            color: #1a365d;
+        }
+
+        .posicao-item.segundo .posicao,
+        .posicao-item.segundo .nome,
+        .posicao-item.segundo .tempo {
+            color: #1a365d;
+        }
+
+        .posicao-item.terceiro .posicao,
+        .posicao-item.terceiro .nome,
+        .posicao-item.terceiro .tempo {
+            color: #1a365d;
+        }
+
+        /* Container principal otimizado para modo retrato */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            gap: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Leaderboard container */
+        .leaderboard-container {
+            width: 90%;
+            max-width: 600px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 1rem;
+            padding: 2rem;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .leaderboard-title {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* Botão de navegação */
+        .nav-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 0.5);
+            border-color: rgba(255, 255, 255, 0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            color: #0076c0;
+        }
+
+        .nav-button:active {
+            transform: translateY(0);
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Responsividade para modo retrato */
+        @media (max-width: 768px) {
+            .leaderboard-container {
+                width: 95%;
+                padding: 1.5rem;
+            }
+            
+            .leaderboard-title {
+                font-size: 2rem;
+            }
+            
+            .posicao-item {
+                flex-direction: column;
+                align-items: flex-start;
+                text-align: left;
+                padding: 0.6rem;
+            }
+            
+            .posicao-item .nome {
+                margin-left: 0;
+                margin-top: 0.5rem;
+            }
+            
+            .tempo-container {
+                margin-top: 0.5rem;
+                align-self: flex-end;
+            }
+        }
+
+        /* Otimização para telas em modo retrato */
+        @media (orientation: portrait) {
+            .main-container {
+                padding: 1rem 0.5rem;
+            }
+            
+            .leaderboard-container {
+                width: 95%;
+                max-width: 500px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-[#0076c0] text-[#fefefc]">
+    
+    <!-- Botão de navegação -->
+    <a href="index.html" class="nav-button">← Voltar ao Registro</a>
+
+    <div class="main-container">
+        <!-- Container do Leaderboard -->
+        <div class="leaderboard-container">
+            <h1 class="leaderboard-title">🏁 CLASSIFICAÇÃO 🏁</h1>
+            <div id="listaClassificacao" class="w-full space-y-2">
+                <!-- A lista de corredores será renderizada aqui pelo JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, getDocs, doc, updateDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuração do Firebase - Projeto dashboard-corrida-kdm
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2vluI975aGAGP9AyEPDIIbVQ-U5KFsuw",
+            authDomain: "dashboard-corrida-kdm.firebaseapp.com",
+            projectId: "dashboard-corrida-kdm",
+            storageBucket: "dashboard-corrida-kdm.firebasestorage.app",
+            messagingSenderId: "207183988835",
+            appId: "1:207183988835:web:5369709d78839805651056",
+            measurementId: "G-5E41YX6JK4"
+        };
+        
+        const appId = 'dashboard-corrida-kdm'; // ID único para sua aplicação
+        const initialAuthToken = null; // Não precisa de token customizado
+
+        let db, auth;
+        let authReady = false;
+
+        // Configura o nível de log do Firebase para debug
+        setLogLevel('debug');
+
+        function parseTempo(tempoStr) {
+            if (!tempoStr) return 0;
+            
+            // Remove dois pontos se existirem (para compatibilidade)
+            const tempoLimpo = tempoStr.replace(/:/g, '');
+            
+            if (tempoLimpo.length !== 7) return 0;
+            
+            const minutos = Number(tempoLimpo.substring(0, 2));
+            const segundos = Number(tempoLimpo.substring(2, 4));
+            const milissegundos = Number(tempoLimpo.substring(4, 7));
+            
+            return minutos * 60000 + segundos * 1000 + milissegundos;
+        }
+
+        function formatarTempo(tempoMs) {
+            const ms = tempoMs % 1000;
+            const segundosTotal = Math.floor(tempoMs / 1000);
+            const segundos = segundosTotal % 60;
+            const minutos = Math.floor(segundosTotal / 60);
+
+            const pad = num => num.toString().padStart(2, '0');
+            const padMs = num => num.toString().padStart(3, '0');
+
+            return `${pad(minutos)}:${pad(segundos)}:${padMs(ms)}`;
+        }
+
+        function renderizarClassificacao(corredores) {
+            const listaClassificacao = document.getElementById('listaClassificacao');
+            listaClassificacao.innerHTML = '';
+
+            if (corredores.length === 0) {
+                listaClassificacao.innerHTML = '<p class="text-center italic text-lg">Nenhum corredor registrado ainda.</p>';
+                return;
+            }
+
+            // Limita a 20 corredores máximo para a tela alternativa
+            const corredoresLimitados = corredores.slice(0, 20);
+
+            corredoresLimitados.forEach((corredor, index) => {
+                const posicao = index + 1;
+                const tempoFormatado = formatarTempo(corredor.tempoMs);
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.classList.add('posicao-item');
+
+                // Aplicar classes especiais para top 3
+                if (posicao === 1) {
+                    itemDiv.classList.add('primeiro');
+                } else if (posicao === 2) {
+                    itemDiv.classList.add('segundo');
+                } else if (posicao === 3) {
+                    itemDiv.classList.add('terceiro');
+                }
+
+                const nomeElement = document.createElement('span');
+                nomeElement.classList.add('nome');
+                nomeElement.textContent = corredor.nome;
+
+                const tempoContainer = document.createElement('div');
+                tempoContainer.classList.add('tempo-container');
+                tempoContainer.innerHTML = `<span class="tempo">${tempoFormatado}</span>`;
+
+                itemDiv.appendChild(document.createElement('span')).classList.add('posicao');
+                itemDiv.querySelector('.posicao').textContent = `${posicao}º`;
+
+                const contentDiv = document.createElement('div');
+                contentDiv.classList.add('flex-1', 'flex', 'flex-col');
+                contentDiv.appendChild(nomeElement);
+                itemDiv.appendChild(contentDiv);
+
+                itemDiv.appendChild(tempoContainer);
+                
+                listaClassificacao.appendChild(itemDiv);
+            });
+        }
+
+        const getCollectionRef = () => {
+            return collection(db, `artifacts/${appId}/public/data/corredores`);
+        };
+
+        function iniciarListenerBancoDeDados() {
+            if (!authReady) {
+                console.warn("A autenticação do Firebase ainda não está pronta.");
+                return;
+            }
+            const q = query(getCollectionRef());
+            onSnapshot(q, (snapshot) => {
+                const corredores = [];
+                snapshot.forEach((doc) => {
+                    corredores.push({ ...doc.data(), id: doc.id });
+                });
+                corredores.sort((a, b) => a.tempoMs - b.tempoMs);
+                renderizarClassificacao(corredores);
+            }, (error) => {
+                console.error("Erro ao obter dados em tempo real:", error);
+            });
+        }
+
+        // Inicializa o Firebase e a autenticação
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        
+        // Inicializa sem autenticação para simplificar
+        try {
+            authReady = true;
+            console.log("Firebase inicializado sem autenticação");
+            iniciarListenerBancoDeDados();
+        } catch (error) {
+            console.error("Erro ao inicializar Firebase:", error);
+        }
+
+        // Garantir que o botão de navegação funcione
+        document.addEventListener('DOMContentLoaded', function() {
+            const navButton = document.querySelector('.nav-button');
+            if (navButton) {
+                console.log('Botão de navegação encontrado e funcionando');
+                navButton.addEventListener('click', function(e) {
+                    console.log('Botão clicado - navegando para index.html');
+                    window.location.href = 'index.html';
+                });
+            } else {
+                console.error('Botão de navegação não encontrado!');
+            }
+        });
+    </script>
+</body>
+</html>

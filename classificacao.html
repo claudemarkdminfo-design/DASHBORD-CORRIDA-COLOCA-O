@@ -2,7 +2,17 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initi            flex: 0 1 auto;
+            margin-left: 0.3rem;
+            font-weight: 700;
+            font-size: 1.4rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #1a365d;
+            max-width: 22ch; /* Aumentado para 22 caracteres */
+            min-width: 100px;
+            width: 22ch; /* Aumentado para 22 caracteres */0">
     <title>Classificação da Corrida - KDM</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -58,9 +68,11 @@
             border-radius: 0.5rem;
             transition: transform 0.2s, box-shadow 0.2s;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-            min-height: 50px;
+            min-height: 60px;
             background: linear-gradient(135deg, var(--cor-azul-claro) 0%, var(--cor-azul-medio) 100%);
             border: 2px solid rgba(255, 255, 255, 0.3);
+            position: relative; /* Adicionado para controle de posicionamento */
+            width: 100%; /* Garante largura total */
         }
 
         .posicao-item:hover {
@@ -68,37 +80,94 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
+        /* Ajustes para modo retrato */
+        @media (orientation: portrait) {
+            .posicao-item {
+                flex-wrap: nowrap;
+                gap: 0.5rem;
+                padding: 1rem;
+            }
+
+            .posicao-item .tempo-container {
+                position: static;
+                margin-left: auto;
+            }
+        }
+
         .posicao-item .posicao {
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.8rem;
+            font-size: 2.4rem;
             font-weight: bold;
-            width: 3rem;
+            width: 2.8rem;
             text-align: center;
             color: #1a365d;
             text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
+            padding-right: 0.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .posicao-item .posicao-img {
+            width: 2.8rem;
+            height: auto;
+            object-fit: contain;
         }
         
         .posicao-item.bg-yellow-400 .posicao,
         .posicao-item.bg-gray-300 .posicao,
         .posicao-item.bg-yellow-800 .posicao {
             color: #111;
+        }        /* Adicione este CSS dentro da tag <style> existente */
+        
+        .leaderboard-container {
+            position: relative;
+            overflow: hidden;
+            height: 600px; /* Altura fixa para o container */
+        }
+        
+        #listaClassificacao {
+            position: relative;
+        }
+        
+        .scroll-container {
+            position: relative;
+            height: calc(100% - 70px); /* Altura total menos o título */
+            overflow: hidden;
+        }
+        
+        .scroll-content {
+            position: relative;
+            transition: transform 1s linear;
+        }
+        
+        /* Mantenha os estilos do top 3 sempre visíveis */
+        .posicao-item.primeiro,
+        .posicao-item.segundo,
+        .posicao-item.terceiro {
+            position: sticky;
+            top: 0;
+            z-index: 2;
         }
 
         .posicao-item .nome {
-            flex-grow: 1;
-            margin-left: 1rem;
+            flex: 0 1 auto;
+            margin-left: 0.3rem;
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 1.6rem; /* Aumentado de 1.2rem para 1.6rem */
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
             color: #1a365d;
+            max-width: 22ch;
+            min-width: 100px;
+            width: 22ch;
         }
 
         .posicao-item .tempo {
             font-family: monospace;
             font-weight: 700;
-            font-size: 1.2rem;
+            font-size: 1.4rem;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
             color: #1a365d;
         }
@@ -109,6 +178,53 @@
             border-radius: 0.3rem;
             min-width: 8rem;
             text-align: right;
+            white-space: nowrap;
+            position: relative;
+            z-index: 1;
+            margin-left: auto;
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.2rem;
+        }
+
+        .tempo-diferenca {
+            font-size: 0.9rem;
+            color: #1a365d;
+            opacity: 0.8;
+            font-family: monospace;
+        }
+
+        /* Diferença de tempo em vermelho para 2º e 3º lugares */
+        .posicao-item.segundo .tempo-diferenca,
+        .posicao-item.terceiro .tempo-diferenca {
+            color: #FF0000;
+            opacity: 1;
+            font-weight: bold;
+        }
+
+        /* Estrutura do item de posição */
+        .posicao-item {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start; /* Alinha itens à esquerda */
+            gap: 1rem; /* Espaçamento consistente entre elementos */
+            width: 100%;
+        }
+
+        /* Container para nome do piloto */
+        .flex-1 {
+            flex: 0 1 auto; /* Não cresce, pode encolher, tamanho base auto */
+            min-width: 0; /* Permite que o texto seja truncado */
+            margin-right: 1rem; /* Espaço consistente antes do tempo */
+        }
+
+        /* Ajustes específicos para o top 3 */
+        .posicao-item.primeiro .tempo-container,
+        .posicao-item.segundo .tempo-container,
+        .posicao-item.terceiro .tempo-container {
+            background-color: rgba(255, 255, 255, 0.6);
         }
 
         /* Top 3 com cores especiais */
@@ -149,30 +265,70 @@
         .main-container {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            align-items: flex-end; /* encosta à direita */
+            justify-content: center; /* centraliza verticalmente */
             min-height: 100vh;
             gap: 2rem;
             position: relative;
             z-index: 1;
+            padding-right: 2rem; /* afastamento da borda direita */
         }
 
         /* Leaderboard container */
         .leaderboard-container {
-            width: 90%;
-            max-width: 600px;
+            width: 80%;
+            max-width: 750px; /* Reduzido mais um pouco */
             background: rgba(0, 0, 0, 0.4);
             border-radius: 1rem;
             padding: 2rem;
             backdrop-filter: blur(15px);
             border: 2px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            margin-left: auto; /* Move para a direita */
+            margin-right: 0.3rem; /* Reduzido ainda mais para ficar bem próximo à direita */
+            height: 90vh;
+            overflow: hidden;
+        }
+
+        .top-3-fixed {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: transparent;
+            padding-bottom: 1rem;
+        }
+
+        .scroll-wrapper {
+            height: calc(100% - 250px);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .scroll-content {
+            animation: scrollAnimation 120s linear infinite;
+            will-change: transform;
+            padding-bottom: 2rem; /* Espaço extra no final */
+        }
+
+        @keyframes scrollAnimation {
+            0% { transform: translateY(0); }
+            40% { transform: translateY(var(--scroll-distance, -100px)); } /* Desce até o último corredor */
+            45% { transform: translateY(var(--scroll-distance, -100px)); } /* Pequena pausa no final */
+            85% { transform: translateY(0); } /* Volta ao topo (4ª posição) */
+            100% { transform: translateY(0); } /* Mantém no topo por um tempo */
+        }
+
+        .scroll-wrapper {
+            height: calc(100% - 280px); /* Ajuste para melhor visualização */
+            overflow: hidden;
+            position: relative;
+            margin-top: 20px;
         }
 
         .leaderboard-title {
             text-align: center;
             margin-bottom: 1.5rem;
-            font-size: 2.5rem;
+            font-size: 3rem;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
 
@@ -213,6 +369,7 @@
             .leaderboard-container {
                 width: 95%;
                 padding: 1.5rem;
+                margin: 0 auto; /* em telas pequenas, centraliza horizontalmente */
             }
             
             .leaderboard-title {
@@ -240,12 +397,22 @@
         /* Otimização para telas em modo retrato */
         @media (orientation: portrait) {
             .main-container {
-                padding: 1rem 0.5rem;
+                padding: 1rem;
+                display: flex;
+                justify-content: flex-end; /* Alinha à direita */
             }
             
             .leaderboard-container {
-                width: 95%;
-                max-width: 500px;
+                width: 85%;
+                max-width: 750px;
+                margin-right: 0.3rem; /* Margem mínima à direita */
+            }
+        }
+
+        /* Ajustes para telas muito largas */
+        @media (min-width: 1200px) {
+            .leaderboard-container {
+                max-width: 1200px; /* Reduzido para um tamanho mais adequado */
             }
         }
     </style>
@@ -317,17 +484,67 @@
             return `${pad(minutos)}:${pad(segundos)}:${padMs(ms)}`;
         }
 
+        function formatarDiferenca(diferencaMs) {
+            const ms = Math.abs(diferencaMs) % 1000;
+            const segundosTotal = Math.floor(Math.abs(diferencaMs) / 1000);
+            const segundos = segundosTotal % 60;
+            const minutos = Math.floor(segundosTotal / 60);
+
+            const pad = num => num.toString().padStart(2, '0');
+            const padMs = num => num.toString().padStart(3, '0');
+
+            return `${pad(minutos)}:${pad(segundos)}:${padMs(ms)}`;
+        }
+
+        function iniciarAnimacaoScroll() {
+            const scrollContent = document.querySelector('.scroll-content');
+            const contentHeight = scrollContent.offsetHeight;
+            const containerHeight = document.querySelector('.scroll-container').offsetHeight;
+            let scrollPosition = 0;
+            let scrollingDown = true;
+            
+            function animate() {
+                if (scrollingDown) {
+                    scrollPosition += 1;
+                    if (scrollPosition >= contentHeight - containerHeight) {
+                        scrollingDown = false;
+                        setTimeout(() => animate(), 2000); // Pausa de 2s no final
+                        return;
+                    }
+                } else {
+                    scrollPosition -= 1;
+                    if (scrollPosition <= 0) {
+                        scrollingDown = true;
+                        setTimeout(() => animate(), 2000); // Pausa de 2s no início
+                        return;
+                    }
+                }
+                
+                scrollContent.style.transform = `translateY(-${scrollPosition}px)`;
+                requestAnimationFrame(animate);
+            }
+
+            setTimeout(() => animate(), 2000); // Início após 2s
+        }
+
         function renderizarClassificacao(corredores) {
             const listaClassificacao = document.getElementById('listaClassificacao');
-            listaClassificacao.innerHTML = '';
+            
+            // Limita a 50 corredores e ordena por tempo
+            const corredoresLimitados = corredores.slice(0, 50);
+            
+            // Estrutura base do leaderboard
+            listaClassificacao.innerHTML = `
+                <div class="top-3-fixed"></div>
+                <div class="scroll-wrapper">
+                    <div class="scroll-content"></div>
+                </div>
+            `;
 
             if (corredores.length === 0) {
                 listaClassificacao.innerHTML = '<p class="text-center italic text-lg">Nenhum corredor registrado ainda.</p>';
                 return;
             }
-
-            // Limita a 20 corredores máximo para a tela alternativa
-            const corredoresLimitados = corredores.slice(0, 20);
 
             corredoresLimitados.forEach((corredor, index) => {
                 const posicao = index + 1;
@@ -336,35 +553,66 @@
                 const itemDiv = document.createElement('div');
                 itemDiv.classList.add('posicao-item');
 
-                // Aplicar classes especiais para top 3
-                if (posicao === 1) {
-                    itemDiv.classList.add('primeiro');
-                } else if (posicao === 2) {
-                    itemDiv.classList.add('segundo');
-                } else if (posicao === 3) {
-                    itemDiv.classList.add('terceiro');
+                // Limita o nome a 22 caracteres com reticências
+                const nomeFormatado = corredor.nome.length > 22 ? 
+                    corredor.nome.substring(0, 22) + '...' : 
+                    corredor.nome;
+
+                // Calcula a diferença de tempo para o corredor anterior
+                let diferenca = '';
+                if (posicao > 1) {
+                    const tempoAnterior = corredoresLimitados[index - 1].tempoMs;
+                    const difMs = corredor.tempoMs - tempoAnterior;
+                    const difFormatada = formatarDiferenca(difMs);
+                    diferenca = `<span class="tempo-diferenca">(-${difFormatada})</span>`;
                 }
 
-                const nomeElement = document.createElement('span');
-                nomeElement.classList.add('nome');
-                nomeElement.textContent = corredor.nome;
+                itemDiv.innerHTML = `
+                    <span class="posicao">
+                        ${posicao === 1 ? '<img src="Primeiro.png" class="posicao-img" alt="1º">' :
+                          posicao === 2 ? '<img src="Segundo.png" class="posicao-img" alt="2º">' :
+                          posicao === 3 ? '<img src="Terceiro.png" class="posicao-img" alt="3º">' :
+                          `${posicao}º`}
+                    </span>
+                    <div class="flex-1 flex flex-col">
+                        <span class="nome" title="${corredor.nome}">${nomeFormatado}</span>
+                    </div>
+                    <div class="tempo-container">
+                        <span class="tempo">${tempoFormatado}</span>
+                        ${diferenca}
+                    </div>
+                `;
 
-                const tempoContainer = document.createElement('div');
-                tempoContainer.classList.add('tempo-container');
-                tempoContainer.innerHTML = `<span class="tempo">${tempoFormatado}</span>`;
-
-                itemDiv.appendChild(document.createElement('span')).classList.add('posicao');
-                itemDiv.querySelector('.posicao').textContent = `${posicao}º`;
-
-                const contentDiv = document.createElement('div');
-                contentDiv.classList.add('flex-1', 'flex', 'flex-col');
-                contentDiv.appendChild(nomeElement);
-                itemDiv.appendChild(contentDiv);
-
-                itemDiv.appendChild(tempoContainer);
-                
-                listaClassificacao.appendChild(itemDiv);
+                // Adiciona classes especiais para os três primeiros
+                if (posicao <= 3) {
+                    itemDiv.classList.add(posicao === 1 ? 'primeiro' : posicao === 2 ? 'segundo' : 'terceiro');
+                    listaClassificacao.querySelector('.top-3-fixed').appendChild(itemDiv);
+                } else {
+                    listaClassificacao.querySelector('.scroll-content').appendChild(itemDiv);
+                }
             });
+
+            // Configura a animação baseada no número real de corredores
+            const scrollContent = listaClassificacao.querySelector('.scroll-content');
+            if (corredoresLimitados.length > 3) {
+                // Espera os elementos serem renderizados
+                setTimeout(() => {
+                    // Pega o último item para calcular a posição exata
+                    const items = scrollContent.querySelectorAll('.posicao-item');
+                    const lastItem = items[items.length - 1];
+                    
+                    // Calcula a distância exata até o último item
+                    const scrollDistance = lastItem.offsetTop - items[0].offsetTop;
+                    
+                    // Define a distância do scroll como uma variável CSS
+                    document.documentElement.style.setProperty('--scroll-distance', `-${scrollDistance}px`);
+                    
+                    // Reset da animação para aplicar a nova distância
+                    scrollContent.style.animation = 'none';
+                    scrollContent.offsetHeight; // Força um reflow
+                    scrollContent.style.animation = 'scrollAnimation 120s linear infinite';
+                }, 200); // Aumentado para garantir que todos os elementos estejam renderizados
+            }
         }
 
         const getCollectionRef = () => {
@@ -382,8 +630,10 @@
                 snapshot.forEach((doc) => {
                     corredores.push({ ...doc.data(), id: doc.id });
                 });
+                // Ordena por tempo e pega os 50 melhores tempos
                 corredores.sort((a, b) => a.tempoMs - b.tempoMs);
-                renderizarClassificacao(corredores);
+                const top50Corredores = corredores.slice(0, 50);
+                renderizarClassificacao(top50Corredores);
             }, (error) => {
                 console.error("Erro ao obter dados em tempo real:", error);
             });

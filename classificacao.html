@@ -312,10 +312,7 @@
 
         @keyframes scrollAnimation {
             0% { transform: translateY(0); }
-            40% { transform: translateY(var(--scroll-distance, -100px)); } /* Desce até o último corredor */
-            45% { transform: translateY(var(--scroll-distance, -100px)); } /* Pequena pausa no final */
-            85% { transform: translateY(0); } /* Volta ao topo (4ª posição) */
-            100% { transform: translateY(0); } /* Mantém no topo por um tempo */
+            100% { transform: translateY(calc(-1 * var(--scroll-distance, 0px))); }
         }
 
         .scroll-wrapper {
@@ -588,30 +585,36 @@
                     itemDiv.classList.add(posicao === 1 ? 'primeiro' : posicao === 2 ? 'segundo' : 'terceiro');
                     listaClassificacao.querySelector('.top-3-fixed').appendChild(itemDiv);
                 } else {
+                    itemDiv.classList.add('original');
                     listaClassificacao.querySelector('.scroll-content').appendChild(itemDiv);
                 }
             });
 
-            // Configura a animação baseada no número real de corredores
+            // Loop contínuo: duplica a sequência do 4º em diante
             const scrollContent = listaClassificacao.querySelector('.scroll-content');
-            if (corredoresLimitados.length > 3) {
-                // Espera os elementos serem renderizados
+            const originais = Array.from(scrollContent.querySelectorAll('.posicao-item.original'));
+            if (originais.length > 0) {
+                // Clona todos os originais para criar a continuidade
+                const fragmentoClone = document.createDocumentFragment();
+                originais.forEach((node) => {
+                    const clone = node.cloneNode(true);
+                    clone.classList.remove('original');
+                    fragmentoClone.appendChild(clone);
+                });
+                scrollContent.appendChild(fragmentoClone);
+
+                // Ajusta a distância de scroll com base apenas na primeira sequência
                 setTimeout(() => {
-                    // Pega o último item para calcular a posição exata
-                    const items = scrollContent.querySelectorAll('.posicao-item');
-                    const lastItem = items[items.length - 1];
-                    
-                    // Calcula a distância exata até o último item
-                    const scrollDistance = lastItem.offsetTop - items[0].offsetTop;
-                    
-                    // Define a distância do scroll como uma variável CSS
-                    document.documentElement.style.setProperty('--scroll-distance', `-${scrollDistance}px`);
-                    
-                    // Reset da animação para aplicar a nova distância
+                    const primeiro = originais[0];
+                    const ultimo = originais[originais.length - 1];
+                    const distancia = (ultimo.offsetTop + ultimo.offsetHeight) - primeiro.offsetTop; // valor positivo
+                    document.documentElement.style.setProperty('--scroll-distance', `${distancia}px`);
+
+                    // Reinicia a animação para aplicar a nova distância
                     scrollContent.style.animation = 'none';
-                    scrollContent.offsetHeight; // Força um reflow
+                    scrollContent.offsetHeight; // reflow
                     scrollContent.style.animation = 'scrollAnimation 120s linear infinite';
-                }, 200); // Aumentado para garantir que todos os elementos estejam renderizados
+                }, 200);
             }
         }
 

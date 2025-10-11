@@ -135,8 +135,9 @@
                 <div class="flex justify-center w-full">
                     <img src="KDM - Bem Vindo.png" alt="KDMNET" style="width: 650px !important; height: auto !important; max-width: none !important; margin-left: 30px;">
                 </div>
-                <div class="flex justify-end">
+                <div class="flex flex-col items-end gap-2">
                     <button id="authButton" class="bg-[#fefefc] text-[#0076c0] font-bold py-2 px-6 rounded-md shadow-lg transition-transform transform hover:scale-105 text-lg">Login Admin</button>
+                    <button id="btnVoltarRegistroTopo" class="bg-[#fefefc] text-[#0076c0] font-bold py-2 px-6 rounded-md shadow-lg transition-transform transform hover:scale-105 text-lg">Voltar para o Registro</button>
                 </div>
             </div>
             <!-- Títulos das seções -->
@@ -282,8 +283,10 @@
             const titulo = document.getElementById('tituloSecao');
             if (mostrarClassificacao) {
                 titulo.textContent = 'Classificação da Corrida';
+                document.getElementById('btnVoltarRegistroTopo').style.display = 'block';
             } else {
                 titulo.textContent = 'Registro de Corredores';
+                document.getElementById('btnVoltarRegistroTopo').style.display = 'none';
             }
         }
 
@@ -754,6 +757,12 @@
         document.getElementById('btnVoltarRegistro').addEventListener('click', () => {
             alternarSecoes(false);
         });
+
+        document.getElementById('btnVoltarRegistroTopo').addEventListener('click', () => {
+            alternarSecoes(false);
+        });
+        // Inicialmente ocultar o botão de voltar do topo
+        document.getElementById('btnVoltarRegistroTopo').style.display = 'none';
 
         document.getElementById('btnLimparRegistros').addEventListener('click', limparRegistros);
         document.getElementById('btnExportarDados').addEventListener('click', exportarDados);

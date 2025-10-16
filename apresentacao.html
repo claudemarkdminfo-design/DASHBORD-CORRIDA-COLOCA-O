@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Apresentação - Rotação</title>
+<style>
+html, body {
+  height: 100%;
+  margin: 0;
+  background: #000;
+  overflow: hidden;
+}
+.container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+iframe {
+  border: 0;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transition: opacity 1.5s ease-in-out;
+}
+iframe.active {
+  opacity: 1;
+}
+iframe.loading {
+  opacity: 0;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <iframe id="frame1" referrerpolicy="no-referrer"></iframe>
+  <iframe id="frame2" referrerpolicy="no-referrer"></iframe>
+</div>
+<script>
+(function () {
+  const pages = ["classificacao.html", "info.html"];
+  const durations = [20000, 8000]; // 20s para classificação, 8s para info
+  let index = 0;
+  let currentFrame = 0;
+  let timeoutId = null;
+  const frames = [document.getElementById("frame1"), document.getElementById("frame2")];
+  const scrollPositions = [0, 0]; // Armazena posição de rolagem de cada frame
+  
+  function withCacheBuster(url) {
+    const hasQuery = url.includes("?");
+    const sep = hasQuery ? "&" : "?";
+    return url + sep + "t=" + Date.now();
+  }
+  
+  function saveScrollPosition(frameIndex) {
+    try {
+      const iframe = frames[frameIndex];
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      scrollPositions[frameIndex] = {
+        scrollTop: doc.documentElement.scrollTop || doc.body.scrollTop,
+        scrollLeft: doc.documentElement.scrollLeft || doc.body.scrollLeft
+      };
+    } catch (e) {
+      // Ignora erros de cross-origin
+    }
+  }
+  
+  function restoreScrollPosition(frameIndex) {
+    try {
+      const iframe = frames[frameIndex];
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      const pos = scrollPositions[frameIndex];
+      if (pos) {
+        doc.documentElement.scrollTop = pos.scrollTop;
+        doc.body.scrollTop = pos.scrollTop;
+        doc.documentElement.scrollLeft = pos.scrollLeft;
+        doc.body.scrollLeft = pos.scrollLeft;
+      }
+    } catch (e) {
+      // Ignora erros de cross-origin
+    }
+  }
+  
+  function showPage(pageIndex) {
+    const nextFrame = currentFrame === 0 ? 1 : 0;
+    const currentIframe = frames[currentFrame];
+    const nextIframe = frames[nextFrame];
+    
+    // Salva posição de rolagem do frame atual antes de trocar
+    saveScrollPosition(currentFrame);
+    
+    // Remove classe active do frame atual
+    currentIframe.classList.remove("active");
+    currentIframe.classList.add("loading");
+    
+    // Se for a mesma página, apenas restaura a rolagem
+    if (nextIframe.src.includes(pages[pageIndex])) {
+      nextIframe.classList.remove("loading");
+      nextIframe.classList.add("active");
+      restoreScrollPosition(nextFrame);
+      
+      setTimeout(() => {
+        currentIframe.classList.remove("loading");
+        currentFrame = nextFrame;
+      }, 100);
+      
+      scheduleNext();
+      return;
+    }
+    
+    // Carrega nova página no próximo frame
+    nextIframe.src = withCacheBuster(pages[pageIndex]);
+    
+    // Quando carregar, faz a transição
+    nextIframe.onload = function() {
+      nextIframe.classList.remove("loading");
+      nextIframe.classList.add("active");
+      
+      // Restaura posição de rolagem se for a mesma página
+      restoreScrollPosition(nextFrame);
+      
+      // Remove active do frame anterior após um delay
+      setTimeout(() => {
+        currentIframe.classList.remove("loading");
+        currentFrame = nextFrame;
+      }, 100);
+      
+      // Agenda próxima troca com duração específica da página atual
+      scheduleNext();
+    };
+  }
+  
+  function scheduleNext() {
+    // Cancela timeout anterior se existir
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    
+    // Agenda próxima troca
+    timeoutId = setTimeout(() => {
+      index = (index + 1) % pages.length;
+      showPage(index);
+    }, durations[index]);
+  }
+  
+  // Inicia com a primeira página
+  showPage(0);
+})();
+</script>
+</body>
+</html>
+
+

@@ -10,7 +10,7 @@ html, body {
   height: 100%;
   margin: 0;
   background: #000;
-  overflow: hidden;
+  overflow: hidden; /* remove scroll para evitar linha preta no topo */
 }
 .container {
   position: relative;
@@ -32,6 +32,18 @@ iframe.active {
 }
 iframe.loading {
   opacity: 0;
+}
+
+/* Oculta a barra de rolagem (mantém o scroll) */
+/* Firefox */
+html {
+  scrollbar-width: none;
+}
+/* Chrome/Edge/Safari */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
 }
 </style>
 </head>
